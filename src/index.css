@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Premium Ocean & Sunset Theme */
+    --background: 210 40% 98%; /* Cooler, fresher white */
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Vibrant Ocean Blue */
+    --primary: 200 90% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft Sunset Coral/Pink */
+    --secondary: 340 85% 65%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 15% 45%;
+
+    --accent: 210 20% 93%; /* Subtle gray for hover states */
+    --accent-foreground: 215 25% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 25% 90%;
+    --input: 210 25% 94%;
+    --ring: 200 90% 48%;
+
+    --radius: 0.75rem;
+
+    /* Enhanced Gradients */
+    --gradient-ocean: linear-gradient(
+      135deg,
+      hsl(200 90% 48%),
+      hsl(190 80% 45%)
+    );
+    --gradient-hero: linear-gradient(
+      to bottom,
+      hsl(200 90% 60% / 0.2),
+      hsl(340 85% 65% / 0.15)
+    );
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 99%));
+
+    /* Softer, more premium shadows */
+    --shadow-soft: 0 4px 20px -2px hsl(215 25% 15% / 0.08);
+    --shadow-card: 0 10px 30px -5px hsl(215 25% 15% / 0.1);
+    --shadow-hover: 0 20px 40px -5px hsl(215 25% 15% / 0.15);
+
+    /* Semantic Colors (Stats & Rarities) */
+    --pow: 350 85% 60%; /* Soft Red */
+    --tec: 210 85% 60%; /* Electric Blue - Adjusted to match primary hue family but distinct */
+    --stm: 150 70% 45%; /* Seafoam Green */
+    --apl: 280 70% 60%; /* Lavender Purple */
+
+    --ssr: 45 95% 55%; /* Golden Amber */
+    --sr: 260 60% 70%; /* Soft Lilac */
+    --r: 200 60% 60%; /* Muted Blue */
+
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 215 30% 10%;
+    --foreground: 210 25% 95%;
+
+    --card: 215 25% 13%;
+    --card-foreground: 210 25% 95%;
+
+    --popover: 215 25% 13%;
+    --popover-foreground: 210 25% 95%;
+
+    /* Lighter Ocean Blue for Dark Mode */
+    --primary: 200 80% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Lighter Sunset Coral for Dark Mode */
+    --secondary: 340 75% 65%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 215 25% 20%;
+    --muted-foreground: 215 15% 70%;
+
+    --accent: 215 25% 22%; /* Subtle dark gray for hover states */
+    --accent-foreground: 210 25% 95%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 25% 22%;
+    --input: 215 25% 22%;
+    --ring: 200 80% 60%;
+
+    /* Semantic Colors (Dark Mode) */
+    --pow: 350 85% 65%;
+    --tec: 210 85% 65%;
+    --stm: 150 70% 55%;
+    --apl: 280 70% 65%;
+
+    --ssr: 45 95% 60%;
+    --sr: 260 60% 75%;
+    --r: 200 60% 65%;
+
+    --gradient-ocean: linear-gradient(
+      135deg,
+      hsl(200 80% 50%),
+      hsl(190 70% 40%)
+    );
+    --gradient-hero: linear-gradient(
+      to bottom,
+      hsl(200 80% 30% / 0.3),
+      hsl(340 75% 25% / 0.2)
+    );
+    --gradient-card: linear-gradient(
+      145deg,
+      hsl(215 25% 13%),
+      hsl(215 30% 11%)
+    );
+
+    --shadow-soft: 0 4px 20px -2px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 10px 30px -5px hsl(0 0% 0% / 0.4);
+    --shadow-hover: 0 20px 40px -5px hsl(0 0% 0% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* 
+   * Global focus styles for keyboard accessibility
+   * Ensures visible focus indicators with sufficient contrast
+   * Requirements: 7.1 - Support keyboard navigation with visible focus indicators
+   */
+
+  /* Default focus-visible styles for all interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  [role="menuitem"]:focus-visible,
+  [role="menuitemradio"]:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+
+  /* Focus styles for form inputs */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-0;
+  }
+
+  /* Skip link for keyboard users - hidden until focused */
+  .skip-link {
+    @apply absolute -top-10 left-4 z-[100] bg-primary text-primary-foreground px-4 py-2 rounded-md;
+    @apply focus:top-4 transition-all;
+  }
+
+  /* Ensure focus ring is visible on dark backgrounds */
+  .dark a:focus-visible,
+  .dark button:focus-visible,
+  .dark [role="button"]:focus-visible,
+  .dark [tabindex]:focus-visible {
+    @apply ring-offset-background;
+  }
+}

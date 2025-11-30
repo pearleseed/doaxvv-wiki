@@ -1,0 +1,4 @@
+// Skeleton components barrel export
+export { default as CardSkeleton } from './CardSkeleton';
+export { default as GridSkeleton } from './GridSkeleton';
+export { default as DetailSkeleton } from './DetailSkeleton';

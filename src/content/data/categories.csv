@@ -1,0 +1,31 @@
+id,unique_key,parent_id,order,name_en,name_jp,description_en,description_jp
+1,beginner,events,1,Beginner,初心者,Guides and resources for new players,新規プレイヤー向けガイドとリソース
+2,events,,2,Events,イベント,Event guides and strategies,イベントガイドと戦略
+3,team-building,events,3,Team Building,チーム編成,Team composition and optimization guides,チーム編成と最適化ガイド
+4,advanced,,4,Advanced,上級,Advanced strategies and techniques,上級戦略とテクニック
+5,economy,events,5,Economy,経済,Resource management and gacha guides,リソース管理とガチャガイド
+6,characters,,6,Characters,キャラクター,Character information and profiles,キャラクター情報とプロフィール
+7,swimsuits,events,7,Swimsuits,水着,Swimsuit catalog and stats,水着カタログとステータス
+8,tournaments,,8,Tournaments,トーナメント,Tournament and competitive play guides,トーナメントと競技プレイガイド
+9,gachas,,9,Gachas,ガチャ,Gacha banners and pull information,ガチャバナーとガチャ情報
+10,items,,10,Items,アイテム,Items accessories and decorations,"アイテム、アクセサリー、装飾品"
+11,ocean-activities,,11,Ocean Activities,海洋アクティビティ,Activities and events related to ocean and water sports,海洋やウォータースポーツに関連するアクティビティとイベント
+12,astronomical-events,,12,Astronomical Events,天体イベント,Stargazing and astronomical themed events and activities,星空観測と天体をテーマにしたイベントとアクティビティ
+13,seasonal-celebrations,,13,Seasonal Celebrations,季節のお祝い,Seasonal events and holiday celebrations,季節のイベントと休日の祝い事
+14,magical-content,,14,Magical Content,魔法コンテンツ,Magic and fantasy themed content and mechanics,魔法とファンタジーをテーマにしたコンテンツとメカニクス
+15,creative-activities,,15,Creative Activities,創造的アクティビティ,Photography,写真、芸術、創造的な表現のアクティビティ
+16,performance-arts,,16,Performance Arts,パフォーマンスアート,Dance,ダンス、音楽、パフォーマンスアートのコンテンツ
+17,competitive-gaming,,17,Competitive Gaming,競技ゲーム,Competitive gameplay,競技ゲーム、トーナメント、ランキング
+18,cultural-heritage,,18,Cultural Heritage,文化的遺産,Cultural traditions,文化の伝統、遺産、伝統的なアクティビティ
+19,nature-exploration,,19,Nature Exploration,自然探検,Nature,自然、アウトドアアクティビティ、環境テーマ
+20,special-collections,,20,Special Collections,スペシャルコレクション,Limited-time collections,期間限定コレクション、バンドル、スペシャルコンテンツ
+21,competitive-play,,21,Competitive Play,競技プレイ,Ranked matches,ランクマッチ、トーナメント、競技戦略
+22,character-development,,22,Character Development,キャラクター育成,Character progression,キャラクターの進行、レベルアップ、スキル開発
+23,resource-management,,23,Resource Management,リソース管理,Efficient use of V-Stones,Vストーン、スタミナ、その他のリソースの効率的な使用
+24,match-preparation,,24,Match Preparation,試合準備,Pre-match strategies,試合前戦略、チームセットアップ、最適化
+25,social-features,,25,Social Features,ソーシャル機能,Friend lists,フレンドリスト、協力プレイ、コミュニティ交流
+26,visual-customization,,26,Visual Customization,ビジュアルカスタマイズ,Avatar customization,アバターカスタマイズ、テーマ、ビジュアル設定
+27,achievement-system,,27,Achievement System,実績システム,Game achievements,ゲーム実績、マイルストーン、報酬システム
+28,seasonal-content,,28,Seasonal Content,季節コンテンツ,Seasonal events,季節イベント、期間限定モード、休日機能
+29,daily-activities,,29,Daily Activities,デイリーアクティビティ,Daily quests,デイリークエスト、ログインボーナス、日常ゲームプレイタスク
+30,community-events,,30,Community Events,コミュニティイベント,Community-driven events,コミュニティ主導のイベント、コラボレーション、ユーザー生成コンテンツ

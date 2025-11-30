@@ -1,0 +1,30 @@
+id,unique_key,usage_count,name_en,name_jp,description_en,description_jp
+1,game-basics,5,Game Basics,ゲームの基本,Fundamental game mechanics and systems,基本的なゲームメカニクスとシステム
+2,tutorial,3,Tutorial,チュートリアル,Step-by-step tutorials,ステップバイステップのチュートリアル
+3,getting-started,4,Getting Started,はじめに,Resources for new players,新規プレイヤー向けリソース
+4,events,8,Events,イベント,Event-related content,イベント関連コンテンツ
+5,farming,6,Farming,周回,Resource and point farming strategies,リソースとポイントの周回戦略
+6,strategy,12,Strategy,戦略,Strategic gameplay guides,戦略的なゲームプレイガイド
+7,team-building,7,Team Building,チーム編成,Team composition guides,チーム編成ガイド
+8,stats,15,Stats,ステータス,Character and suit statistics,キャラクターと水着のステータス
+9,advanced,9,Advanced,上級,Advanced gameplay content,上級ゲームプレイコンテンツ
+10,volleyball,11,Volleyball,バレーボール,Volleyball mechanics and techniques,バレーボールのメカニクスとテクニック
+11,techniques,8,Techniques,テクニック,Specific gameplay techniques,特定のゲームプレイテクニック
+12,economy,5,Economy,経済,Resource management,リソース管理
+13,v-stones,7,V-Stones,Vストーン,Premium currency guides,プレミアム通貨ガイド
+14,gacha,9,Gacha,ガチャ,Gacha system and strategies,ガチャシステムと戦略
+15,f2p,6,F2P,無課金,Free-to-play guides,無課金向けガイド
+16,tier-list,4,Tier List,ティアリスト,Ranking and tier lists,ランキングとティアリスト
+17,ssr,18,SSR,SSR,SSR rarity content,SSRレアリティコンテンツ
+18,suits,20,Suits,水着,Swimsuit-related content,水着関連コンテンツ
+19,meta,8,Meta,メタ,Current meta analysis,現在のメタ分析
+20,limited,12,Limited,期間限定,Limited-time content,期間限定コンテンツ
+21,dreams,5,Dreams,夢,Dream and nightmare themed content,夢と悪夢をテーマにしたコンテンツ
+22,wolves,4,Wolves,狼,Wolf and canine themed content,狼と犬をテーマにしたコンテンツ
+23,light-magic,6,Light Magic,光魔法,Light and divine magic content,光と神聖魔法コンテンツ
+24,ninjas,7,Ninjas,忍者,Ninja and stealth themed content,忍者和隠密テーマコンテンツ
+25,aerial,9,Aerial,空中,Aerial and sky themed content,空中と空をテーマにしたコンテンツ
+26,jungle,8,Jungle,ジャングル,Jungle and exploration themed content,ジャングルと探検テーマコンテンツ
+27,flowers,10,Flowers,花,Flower and garden themed content,花と庭園テーマコンテンツ
+28,moon-magic,6,Moon Magic,月魔法,Moon and lunar magic content,月と月の魔法コンテンツ
+29,wind-magic,7,Wind Magic,風魔法,Wind and air magic content,風と空気魔法コンテンツ

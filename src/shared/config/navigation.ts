@@ -1,0 +1,65 @@
+import {
+  Users,
+  Heart,
+  Sparkles,
+  Calendar,
+  PartyPopper,
+  Gift,
+  BookOpen,
+  Package,
+  Film,
+  Wrench,
+} from "lucide-react";
+import { NavGroup } from "@/shared/types/navigation";
+
+/**
+ * Navigation groups configuration
+ * Organizes navigation items into logical categories:
+ * - Characters: Girls, Swimsuits
+ * - Contents: Events, Festivals, Gachas, Items
+ * - Resources: Guides
+ */
+export const navigationGroups: NavGroup[] = [
+  {
+    label: "Characters",
+    icon: Users,
+    items: [
+      { path: "/girls", label: "Girls", icon: Heart },
+      { path: "/swimsuits", label: "Swimsuits", icon: Sparkles },
+    ],
+  },
+  {
+    label: "Contents",
+    icon: Calendar,
+    items: [
+      { path: "/events", label: "Events", icon: Calendar },
+      { path: "/festivals", label: "Festivals", icon: PartyPopper },
+      { path: "/gachas", label: "Gachas", icon: Gift },
+      { path: "/episodes", label: "Episodes", icon: Film },
+      { path: "/items", label: "Items", icon: Package },
+    ],
+  },
+  {
+    label: "Resources",
+    icon: BookOpen,
+    items: [
+      { path: "/guides", label: "Guides", icon: BookOpen },
+      { path: "/tools", label: "Tools", icon: Wrench },
+    ],
+  },
+];
+
+/**
+ * Helper function to check if a path is active
+ * Matches exact path or child routes
+ */
+export const isPathActive = (currentPath: string, targetPath: string): boolean => {
+  return currentPath === targetPath || currentPath.startsWith(targetPath + "/");
+};
+
+/**
+ * Helper function to check if any item in a group is active
+ */
+export const isGroupActive = (currentPath: string, group: NavGroup): boolean => {
+  return group.items.some((item) => isPathActive(currentPath, item.path));
+};
