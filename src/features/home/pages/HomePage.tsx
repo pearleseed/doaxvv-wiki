@@ -89,14 +89,9 @@ const HomePage = () => {
             <SiteOverview />
           </div>
 
-          {/* Version Updates - Full Width Prominent Section */}
+          {/* Version Updates */}
           <div className="mt-8 sm:mt-12">
             <VersionUpdates />
-          </div>
-
-          {/* Current Events - Full Width */}
-          <div className="mt-8 sm:mt-12">
-            <CurrentEvents />
           </div>
 
           {/* What's New and Featured Girls - Side by Side */}
@@ -105,7 +100,17 @@ const HomePage = () => {
             <FeaturedCharacters />
           </div>
 
-          {/* Quick Links Section */}
+                    {/* Current Events */}
+          <div className="mt-8 sm:mt-12">
+            <CurrentEvents />
+          </div>
+
+          {/* Full Width Sections */}
+          <div className="mt-8 sm:mt-12">
+            <PopularGuides />
+          </div>
+
+                    {/* Quick Links Section */}
           <div className="mt-8 sm:mt-12">
             <Card className="border-border/50 bg-card shadow-card">
               <CardHeader className="pb-3 sm:pb-6">
@@ -140,13 +145,6 @@ const HomePage = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-
-
-          {/* Full Width Sections */}
-          <div className="mt-8 sm:mt-12">
-            <PopularGuides />
           </div>
 
           {/* Latest Updates Banner */}
