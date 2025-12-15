@@ -1,5 +1,5 @@
 import heroBeach from "@/assets/hero-beach.jpg";
-import { HeroSearch } from "@/features/search";
+import { PrismCapsuleSearch } from "@/features/search/components/PrismCapsuleSearch";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 
 const Hero = () => {
@@ -28,7 +28,7 @@ const Hero = () => {
             {t('hero.subtitle')}
           </p>
           
-          <HeroSearch placeholder={t('hero.searchPlaceholder')} />
+          <PrismCapsuleSearch placeholder={t('hero.searchPlaceholder')} />
         </div>
       </div>
     </section>

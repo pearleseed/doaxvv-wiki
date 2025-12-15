@@ -304,7 +304,7 @@ const CharacterDetailPage = () => {
                         <div className="flex-1">
                           <div className="text-xs text-muted-foreground">{t('characterDetail.voiceActor')}</div>
                           <div className="font-medium">
-                            {character.cast.jp || character.cast.en}
+                            <LocalizedText localized={character.cast} showIndicator />
                           </div>
                         </div>
                       </div>
@@ -617,7 +617,7 @@ const CharacterDetailPage = () => {
                       <div className="p-4 rounded-lg bg-muted/50">
                         <div className="text-xs text-muted-foreground mb-1">{t('characterDetail.voiceActor')}</div>
                         <div className="font-semibold">
-                          {character.cast.jp || character.cast.en}
+                          <LocalizedText localized={character.cast} showIndicator />
                         </div>
                       </div>
                     )}

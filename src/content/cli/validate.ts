@@ -8,7 +8,7 @@ import { readFileSync } from 'fs';
 import { parseCSV } from '../utils/csv-parser';
 import { ContentValidator } from '../utils/validator';
 
-const VALID_TYPES = ['guide', 'character', 'event', 'swimsuit', 'category', 'tag', 'item', 'gacha', 'episode'] as const;
+const VALID_TYPES = ['guide', 'character', 'event', 'swimsuit', 'category', 'tag', 'item', 'gacha', 'episode', 'tool', 'accessory', 'mission', 'quiz'] as const;
 type ContentType = typeof VALID_TYPES[number];
 
 interface ValidationStats {

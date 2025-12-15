@@ -110,31 +110,47 @@ export function usePagination<T = unknown>({
     return range;
   }, [safePage, totalPages, siblingCount]);
 
+  // Scroll to top helper
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Navigation functions
   const goToPage = useCallback((page: number) => {
     const newPage = Math.min(Math.max(1, page), totalPages);
-    setCurrentPage(newPage);
-  }, [totalPages]);
+    if (newPage !== currentPage) {
+      setCurrentPage(newPage);
+      scrollToTop();
+    }
+  }, [totalPages, currentPage, scrollToTop]);
 
   const nextPage = useCallback(() => {
     if (hasNext) {
       setCurrentPage(p => p + 1);
+      scrollToTop();
     }
-  }, [hasNext]);
+  }, [hasNext, scrollToTop]);
 
   const previousPage = useCallback(() => {
     if (hasPrevious) {
       setCurrentPage(p => p - 1);
+      scrollToTop();
     }
-  }, [hasPrevious]);
+  }, [hasPrevious, scrollToTop]);
 
   const firstPage = useCallback(() => {
-    setCurrentPage(1);
-  }, []);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+      scrollToTop();
+    }
+  }, [currentPage, scrollToTop]);
 
   const lastPage = useCallback(() => {
-    setCurrentPage(totalPages);
-  }, [totalPages]);
+    if (currentPage !== totalPages) {
+      setCurrentPage(totalPages);
+      scrollToTop();
+    }
+  }, [totalPages, currentPage, scrollToTop]);
 
   const reset = useCallback(() => {
     setCurrentPage(initialPage);

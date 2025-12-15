@@ -27,6 +27,8 @@ import {
   RotateCcw,
   Home,
   Target,
+  AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 import { useQuiz } from '../hooks/useQuiz';
 import { useQuizResults } from '../hooks/useQuizResults';
@@ -38,16 +40,21 @@ import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
 /**
  * Confetti component for celebration effect
+ * Enhanced for perfect scores with more pieces and golden colors
  */
-function Confetti() {
-  const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
-  const pieces = Array.from({ length: 50 }, (_, i) => ({
+function Confetti({ isPerfect = false }: { isPerfect?: boolean }) {
+  const normalColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
+  const perfectColors = ['#FFD700', '#FFC107', '#FFEB3B', '#FFE082', '#FFF59D', '#FFFFFF'];
+  const colors = isPerfect ? perfectColors : normalColors;
+  const pieceCount = isPerfect ? 100 : 50;
+  
+  const pieces = Array.from({ length: pieceCount }, (_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
     delay: `${Math.random() * 2}s`,
     duration: `${2 + Math.random() * 2}s`,
     color: colors[Math.floor(Math.random() * colors.length)],
-    size: `${8 + Math.random() * 8}px`,
+    size: `${(isPerfect ? 10 : 8) + Math.random() * (isPerfect ? 12 : 8)}px`,
   }));
 
   return (
@@ -64,6 +71,7 @@ function Confetti() {
             width: piece.size,
             height: piece.size,
             borderRadius: Math.random() > 0.5 ? '50%' : '0',
+            boxShadow: isPerfect ? `0 0 6px ${piece.color}` : 'none',
           }}
         />
       ))}
@@ -133,25 +141,11 @@ const QuizResultPage = () => {
   // Calculate grade
   const grade = result ? getGrade(result.percentage) : null;
 
-  // Trigger celebration for high scores (80%+)
+  // Check for perfect score and high score
+  const isPerfectScore = result && result.percentage === 100;
   const isHighScore = result && result.percentage >= 80;
 
-  useEffect(() => {
-    if (result) {
-      // Trigger score reveal animation
-      setShowScoreReveal(true);
-
-      // Show confetti for high scores
-      if (isHighScore) {
-        setShowConfetti(true);
-        // Hide confetti after animation
-        const timer = setTimeout(() => setShowConfetti(false), 4000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [result, isHighScore]);
-
-  // Map answers to questions for review
+  // Map answers to questions for review (moved up to be used by wrongAnswers)
   const answerReview = useMemo(() => {
     if (!result || !questions.length) return [];
 
@@ -163,6 +157,33 @@ const QuizResultPage = () => {
       };
     });
   }, [result, questions]);
+
+  // Get wrong answers for review
+  const wrongAnswers = useMemo(() => {
+    if (!result) return [];
+    return answerReview.filter(({ answer }) => !answer.isCorrect);
+  }, [result, answerReview]);
+
+  // State for filtering to wrong answers only
+  const [showOnlyWrong, setShowOnlyWrong] = useState(false);
+
+  // Filtered answers based on toggle
+  const displayedAnswers = showOnlyWrong ? wrongAnswers : answerReview;
+
+  useEffect(() => {
+    if (result) {
+      // Trigger score reveal animation
+      setShowScoreReveal(true);
+
+      // Show confetti for high scores (80%+) or perfect scores
+      if (isHighScore || isPerfectScore) {
+        setShowConfetti(true);
+        // Hide confetti after animation (longer for perfect scores)
+        const timer = setTimeout(() => setShowConfetti(false), isPerfectScore ? 6000 : 4000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [result, isHighScore, isPerfectScore]);
 
   // Loading state
   if (quizLoading) {
@@ -230,6 +251,9 @@ const QuizResultPage = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
+      {/* Confetti celebration effect */}
+      {showConfetti && <Confetti isPerfect={isPerfectScore} />}
+
       <main id="main-content" className="py-6 sm:py-8" tabIndex={-1}>
         <ResponsiveContainer>
           <Breadcrumb
@@ -260,11 +284,20 @@ const QuizResultPage = () => {
                   {/* Grade */}
                   {grade && (
                     <div className="space-y-1">
-                      <div className={`text-6xl font-bold ${grade.color}`}>
+                      {isPerfectScore && (
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Sparkles className="h-6 w-6 text-yellow-500 animate-pulse" />
+                          <span className="text-lg font-bold text-yellow-500">
+                            {t('quiz.perfectScore') || 'PERFECT SCORE!'}
+                          </span>
+                          <Sparkles className="h-6 w-6 text-yellow-500 animate-pulse" />
+                        </div>
+                      )}
+                      <div className={`text-6xl font-bold ${isPerfectScore ? 'quiz-celebration bg-clip-text text-transparent' : grade.color}`}>
                         {grade.grade}
                       </div>
                       <p className="text-lg text-muted-foreground">
-                        {grade.message}
+                        {isPerfectScore ? (t('quiz.perfectMessage') || 'Absolutely flawless!') : grade.message}
                       </p>
                     </div>
                   )}
@@ -332,6 +365,18 @@ const QuizResultPage = () => {
                   {t('quiz.tryAgain') || 'Try Again'}
                 </Button>
               </Link>
+              {wrongAnswers.length > 0 && (
+                <Button
+                  variant={showOnlyWrong ? 'default' : 'outline'}
+                  onClick={() => setShowOnlyWrong(!showOnlyWrong)}
+                  className={showOnlyWrong ? 'bg-destructive hover:bg-destructive/90' : ''}
+                >
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  {showOnlyWrong 
+                    ? (t('quiz.showAll') || 'Show All') 
+                    : (t('quiz.reviewWrong') || `Review Wrong (${wrongAnswers.length})`)}
+                </Button>
+              )}
               <Link to="/quizzes">
                 <Button variant="outline">
                   <Home className="mr-2 h-4 w-4" />
@@ -344,17 +389,29 @@ const QuizResultPage = () => {
             {answerReview.length > 0 && (
               <Card className="border-border/50 bg-card shadow-card">
                 <CardHeader>
-                  <CardTitle className="text-xl">
-                    {t('quiz.answerReview') || 'Answer Review'}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl">
+                      {showOnlyWrong 
+                        ? (t('quiz.wrongAnswersReview') || 'Wrong Answers Review')
+                        : (t('quiz.answerReview') || 'Answer Review')}
+                    </CardTitle>
+                    {showOnlyWrong && (
+                      <Badge variant="destructive">
+                        {wrongAnswers.length} {t('quiz.wrong') || 'wrong'}
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <Accordion type="single" collapsible className="space-y-2">
-                    {answerReview.map(({ answer, question }, index) => (
+                  <Accordion type="single" collapsible className="space-y-2" defaultValue={showOnlyWrong && displayedAnswers.length > 0 ? displayedAnswers[0].answer.questionId : undefined}>
+                    {displayedAnswers.map(({ answer, question }) => {
+                      // Find original index for display
+                      const originalIndex = answerReview.findIndex(a => a.answer.questionId === answer.questionId);
+                      return (
                       <AccordionItem
                         key={answer.questionId}
                         value={answer.questionId}
-                        className="border rounded-lg px-4"
+                        className={`border rounded-lg px-4 ${!answer.isCorrect ? 'border-destructive/30 bg-destructive/5' : ''}`}
                       >
                         <AccordionTrigger className="hover:no-underline">
                           <div className="flex items-center gap-3 text-left">
@@ -364,7 +421,7 @@ const QuizResultPage = () => {
                               <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
                             )}
                             <span className="text-sm text-muted-foreground">
-                              Q{index + 1}
+                              Q{originalIndex + 1}
                             </span>
                             <span className="font-medium text-foreground line-clamp-1">
                               {question?.content.split('\n')[0] || 'Question'}
@@ -479,7 +536,8 @@ const QuizResultPage = () => {
                           )}
                         </AccordionContent>
                       </AccordionItem>
-                    ))}
+                    );
+                    })}
                   </Accordion>
                 </CardContent>
               </Card>

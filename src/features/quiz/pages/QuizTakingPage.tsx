@@ -4,7 +4,7 @@
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.3, 5.1, 5.2, 5.3, 5.4, 5.5
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/shared/layouts';
 import { ResponsiveContainer, MarkdownRenderer } from '@/shared/components';
@@ -27,6 +27,12 @@ import {
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Label } from '@/shared/components/ui/label';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/shared/components/ui/tooltip';
+import {
   Clock,
   ChevronRight,
   CheckCircle2,
@@ -35,6 +41,9 @@ import {
   Flag,
   Volume2,
   VolumeX,
+  Bookmark,
+  Zap,
+  Keyboard,
 } from 'lucide-react';
 import { useQuiz } from '../hooks/useQuiz';
 import { useQuizSession } from '../hooks/useQuizSession';
@@ -96,6 +105,7 @@ function QuestionOption({
   disabled,
   showResult,
   isAnswerCorrect,
+  shortcutKey,
 }: {
   option: { id: string; text: string; isCorrect: boolean };
   isSelected: boolean;
@@ -104,6 +114,7 @@ function QuestionOption({
   disabled: boolean;
   showResult: boolean;
   isAnswerCorrect?: boolean;
+  shortcutKey?: number;
 }) {
   const getOptionStyle = () => {
     if (!showResult) {
@@ -153,12 +164,38 @@ function QuestionOption({
         </div>
       )}
       <span className="flex-1 text-foreground">{option.text}</span>
+      {shortcutKey && !showResult && (
+        <kbd className="hidden sm:inline-flex h-5 w-5 items-center justify-center rounded border border-border bg-muted text-xs text-muted-foreground">
+          {shortcutKey}
+        </kbd>
+      )}
       {showResult && option.isCorrect && (
         <CheckCircle2 className="h-5 w-5 text-green-500" />
       )}
       {showResult && isSelected && !option.isCorrect && (
         <XCircle className="h-5 w-5 text-destructive" />
       )}
+    </div>
+  );
+}
+
+/**
+ * Time bonus indicator component
+ * Shows visual feedback for fast answers
+ */
+function TimeBonusIndicator({ timeTaken, timeLimit }: { timeTaken: number; timeLimit?: number }) {
+  if (!timeLimit || timeTaken >= timeLimit * 0.5) return null;
+  
+  const bonusLevel = timeTaken < timeLimit * 0.25 ? 'excellent' : 'good';
+  
+  return (
+    <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium animate-bounce ${
+      bonusLevel === 'excellent' 
+        ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' 
+        : 'bg-green-500/20 text-green-600 dark:text-green-400'
+    }`}>
+      <Zap className="h-3 w-3" />
+      {bonusLevel === 'excellent' ? 'Lightning Fast!' : 'Quick Answer!'}
     </div>
   );
 }
@@ -187,14 +224,26 @@ const QuizTakingPage = () => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [textAnswer, setTextAnswer] = useState('');
   const [showConfirmExit, setShowConfirmExit] = useState(false);
+  const [showConfirmFinishWithBookmarks, setShowConfirmFinishWithBookmarks] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [isTimeUp, setIsTimeUp] = useState(false);
+  
+  // Bookmarked questions for review
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
+  
+  // Track correct answers count
+  const [correctCount, setCorrectCount] = useState(0);
+  
+  // Track time bonus for visual feedback
+  const [showTimeBonus, setShowTimeBonus] = useState(false);
+  const [lastAnswerTime, setLastAnswerTime] = useState(0);
 
   // Track if warning sound has been played for current timer
   const warningPlayedRef = useRef(false);
   const timeUpPlayedRef = useRef(false);
+  const questionStartTimeRef = useRef(Date.now());
 
   // Quiz session hook
   const {
@@ -251,8 +300,10 @@ const QuizTakingPage = () => {
     setShowResult(false);
     setIsAnswerCorrect(null);
     setIsTimeUp(false);
+    setShowTimeBonus(false);
     warningPlayedRef.current = false;
     timeUpPlayedRef.current = false;
+    questionStartTimeRef.current = Date.now();
   }, [currentQuestion?.id]);
 
   // Play warning sound when timer is low (< 5 seconds)
@@ -321,12 +372,23 @@ const QuizTakingPage = () => {
   const handleSubmit = useCallback(() => {
     if (!currentQuestion) return;
 
+    // Calculate time taken for this question
+    const timeTaken = Math.round((Date.now() - questionStartTimeRef.current) / 1000);
+    setLastAnswerTime(timeTaken);
+
     // Check if answer is correct and play appropriate sound
     const correct = checkAnswerCorrectness();
     setIsAnswerCorrect(correct);
     
     if (correct) {
       playCorrect();
+      setCorrectCount(prev => prev + 1);
+      
+      // Show time bonus for fast answers (under 50% of time limit)
+      const timeLimit = currentQuestion.timeLimit || (quiz?.time_limit ? quiz.time_limit / questions.length : 30);
+      if (timeTaken < timeLimit * 0.5) {
+        setShowTimeBonus(true);
+      }
     } else {
       playIncorrect();
     }
@@ -341,8 +403,9 @@ const QuizTakingPage = () => {
       setTextAnswer('');
       setShowResult(false);
       setIsAnswerCorrect(null);
+      setShowTimeBonus(false);
     }, 1500); // Slightly longer delay to appreciate the animation
-  }, [currentQuestion, selectedOptions, textAnswer, submitAnswer, checkAnswerCorrectness, playCorrect, playIncorrect]);
+  }, [currentQuestion, selectedOptions, textAnswer, submitAnswer, checkAnswerCorrectness, playCorrect, playIncorrect, quiz?.time_limit, questions.length]);
 
   // Handle skip
   const handleSkip = useCallback(() => {
@@ -357,14 +420,33 @@ const QuizTakingPage = () => {
     finishQuiz();
   }, [finishQuiz]);
 
-  // Navigate to results when completed
-  useEffect(() => {
-    if (isCompleted && result) {
-      navigate(`/quizzes/${unique_key}/result`, { state: { result } });
-    }
-  }, [isCompleted, result, navigate, unique_key]);
+  // Toggle bookmark for current question
+  const toggleBookmark = useCallback(() => {
+    if (!currentQuestion) return;
+    setBookmarkedQuestions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(currentQuestion.id)) {
+        newSet.delete(currentQuestion.id);
+      } else {
+        newSet.add(currentQuestion.id);
+      }
+      return newSet;
+    });
+  }, [currentQuestion]);
 
-  // Check if answer is valid for submission
+  // Check if current question is bookmarked
+  const isCurrentBookmarked = currentQuestion ? bookmarkedQuestions.has(currentQuestion.id) : false;
+
+  // Handle finish with bookmark check
+  const handleFinishWithCheck = useCallback(() => {
+    if (bookmarkedQuestions.size > 0) {
+      setShowConfirmFinishWithBookmarks(true);
+    } else {
+      setShowConfirmExit(true);
+    }
+  }, [bookmarkedQuestions.size]);
+
+  // Check if answer is valid for submission (moved up for keyboard shortcuts)
   const canSubmit = useCallback(() => {
     if (!currentQuestion || showResult) return false;
 
@@ -379,6 +461,64 @@ const QuizTakingPage = () => {
         return false;
     }
   }, [currentQuestion, selectedOptions, textAnswer, showResult]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!isInProgress || showResult || !currentQuestion) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        // Only allow Enter for text input submission
+        if (e.key === 'Enter' && currentQuestion.type === 'text_input' && canSubmit()) {
+          e.preventDefault();
+          handleSubmit();
+        }
+        return;
+      }
+
+      // Number keys 1-9 for option selection
+      if (e.key >= '1' && e.key <= '9') {
+        const optionIndex = parseInt(e.key) - 1;
+        if (currentQuestion.options && optionIndex < currentQuestion.options.length) {
+          const option = currentQuestion.options[optionIndex];
+          if (currentQuestion.type === 'multiple_choice') {
+            handleMultipleSelect(option.id);
+          } else {
+            handleSingleSelect(option.id);
+          }
+        }
+      }
+
+      // Enter to submit
+      if (e.key === 'Enter' && canSubmit()) {
+        e.preventDefault();
+        handleSubmit();
+      }
+
+      // S to skip (with Ctrl/Cmd)
+      if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        handleSkip();
+      }
+
+      // B to bookmark
+      if (e.key === 'b' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        toggleBookmark();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isInProgress, showResult, currentQuestion, canSubmit, handleSubmit, handleSkip, handleSingleSelect, handleMultipleSelect, toggleBookmark]);
+
+  // Navigate to results when completed
+  useEffect(() => {
+    if (isCompleted && result) {
+      navigate(`/quizzes/${unique_key}/result`, { state: { result } });
+    }
+  }, [isCompleted, result, navigate, unique_key]);
 
   // Timer warning threshold (5 seconds)
   const isQuizTimerWarning = hasQuizTimeLimit && quizTimer.timeRemaining <= 5 && quizTimer.timeRemaining > 0;
@@ -507,7 +647,21 @@ const QuizTakingPage = () => {
                     {t('quiz.question') || 'Question'} {progress.current + 1} /{' '}
                     {progress.total}
                   </span>
-                  <span>{progress.percentage}%</span>
+                  <div className="flex items-center gap-3">
+                    {/* Correct count indicator */}
+                    <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-4 w-4" />
+                      {correctCount}/{progress.current}
+                    </span>
+                    {/* Bookmarked count */}
+                    {bookmarkedQuestions.size > 0 && (
+                      <span className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400">
+                        <Bookmark className="h-4 w-4 fill-current" />
+                        {bookmarkedQuestions.size}
+                      </span>
+                    )}
+                    <span>{progress.percentage}%</span>
+                  </div>
                 </div>
                 <Progress value={progress.percentage} className="h-2" />
               </div>
@@ -550,20 +704,47 @@ const QuizTakingPage = () => {
 
             {/* Question Card */}
             {currentQuestion && (
-              <Card className="border-border/50 bg-card shadow-card mb-6">
+              <Card className={`border-border/50 bg-card shadow-card mb-6 ${isCurrentBookmarked ? 'ring-2 ring-yellow-500/50' : ''}`}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline">
-                      {currentQuestion.type === 'single_choice' &&
-                        (t('quiz.singleChoice') || 'Single Choice')}
-                      {currentQuestion.type === 'multiple_choice' &&
-                        (t('quiz.multipleChoice') || 'Multiple Choice')}
-                      {currentQuestion.type === 'text_input' &&
-                        (t('quiz.textInput') || 'Text Input')}
-                    </Badge>
-                    <Badge variant="secondary">
-                      {currentQuestion.points} {t('quiz.points') || 'pts'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {currentQuestion.type === 'single_choice' &&
+                          (t('quiz.singleChoice') || 'Single Choice')}
+                        {currentQuestion.type === 'multiple_choice' &&
+                          (t('quiz.multipleChoice') || 'Multiple Choice')}
+                        {currentQuestion.type === 'text_input' &&
+                          (t('quiz.textInput') || 'Text Input')}
+                      </Badge>
+                      {showTimeBonus && (
+                        <TimeBonusIndicator 
+                          timeTaken={lastAnswerTime} 
+                          timeLimit={currentQuestion.timeLimit || 30} 
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={toggleBookmark}
+                              className={isCurrentBookmarked ? 'text-yellow-500' : 'text-muted-foreground'}
+                            >
+                              <Bookmark className={`h-4 w-4 ${isCurrentBookmarked ? 'fill-current' : ''}`} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{isCurrentBookmarked ? (t('quiz.removeBookmark') || 'Remove bookmark (B)') : (t('quiz.addBookmark') || 'Bookmark for review (B)')}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Badge variant="secondary">
+                        {currentQuestion.points} {t('quiz.points') || 'pts'}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -579,7 +760,7 @@ const QuizTakingPage = () => {
                   {(currentQuestion.type === 'single_choice' ||
                     currentQuestion.type === 'multiple_choice') && (
                     <div className="space-y-3">
-                      {currentQuestion.options.map((option) => (
+                      {currentQuestion.options.map((option, index) => (
                         <QuestionOption
                           key={option.id}
                           option={option}
@@ -593,6 +774,7 @@ const QuizTakingPage = () => {
                           disabled={showResult}
                           showResult={showResult}
                           isAnswerCorrect={isAnswerCorrect ?? undefined}
+                          shortcutKey={index < 9 ? index + 1 : undefined}
                         />
                       ))}
                     </div>
@@ -637,33 +819,66 @@ const QuizTakingPage = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 justify-between">
+            <div className="flex flex-wrap gap-3 justify-between items-center">
               <div className="flex gap-3">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        onClick={handleSkip}
+                        disabled={showResult}
+                      >
+                        <SkipForward className="mr-2 h-4 w-4" />
+                        {t('quiz.skip') || 'Skip'}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ctrl+S</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button
                   variant="outline"
-                  onClick={handleSkip}
-                  disabled={showResult}
-                >
-                  <SkipForward className="mr-2 h-4 w-4" />
-                  {t('quiz.skip') || 'Skip'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowConfirmExit(true)}
+                  onClick={handleFinishWithCheck}
                 >
                   <Flag className="mr-2 h-4 w-4" />
                   {t('quiz.finish') || 'Finish'}
+                  {bookmarkedQuestions.size > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+                      {bookmarkedQuestions.size}
+                    </Badge>
+                  )}
                 </Button>
               </div>
 
-              <Button
-                onClick={handleSubmit}
-                disabled={!canSubmit()}
-                className="min-w-[120px]"
-              >
-                {t('quiz.submit') || 'Submit'}
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+              {/* Keyboard hints */}
+              <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
+                <Keyboard className="h-3 w-3" />
+                <span>1-9: Select</span>
+                <span>•</span>
+                <span>Enter: Submit</span>
+                <span>•</span>
+                <span>B: Bookmark</span>
+              </div>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={!canSubmit()}
+                      className="min-w-[120px]"
+                    >
+                      {t('quiz.submit') || 'Submit'}
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Enter</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </ResponsiveContainer>
@@ -687,6 +902,50 @@ const QuizTakingPage = () => {
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleFinish}>
               {t('quiz.finishQuiz') || 'Finish Quiz'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Finish with Bookmarks Dialog */}
+      <AlertDialog open={showConfirmFinishWithBookmarks} onOpenChange={setShowConfirmFinishWithBookmarks}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Bookmark className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+              {t('quiz.reviewBookmarks') || 'Review Bookmarked Questions?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                {t('quiz.bookmarkedQuestionsMessage') ||
+                  `You have ${bookmarkedQuestions.size} bookmarked question(s) that you may want to review before finishing.`}
+              </p>
+              <div className="mt-3 p-3 rounded-lg bg-muted/50">
+                <p className="text-sm font-medium text-foreground mb-2">
+                  {t('quiz.bookmarkedQuestions') || 'Bookmarked Questions'}:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(bookmarkedQuestions).map((qId) => {
+                    const qIndex = questions.findIndex(q => q.id === qId);
+                    return (
+                      <Badge key={qId} variant="outline" className="text-yellow-600 border-yellow-500">
+                        Q{qIndex + 1}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>
+              {t('quiz.continueQuiz') || 'Continue Quiz'}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleFinish}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('quiz.finishAnyway') || 'Finish Anyway'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

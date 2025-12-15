@@ -3,6 +3,7 @@ import { Toaster } from "@/shared/components/ui/toaster";
 import { Toaster as Sonner } from "@/shared/components/ui/sonner";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { ThemeProvider } from "@/shared/components/ThemeProvider";
+import { CustomContextMenu } from "@/shared/components";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 
@@ -59,6 +60,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <CustomContextMenu />
       <BrowserRouter
         future={{
           v7_startTransition: true,

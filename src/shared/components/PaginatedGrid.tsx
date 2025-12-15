@@ -3,7 +3,7 @@
  * Reusable component that wraps a grid with pagination
  */
 
-import { useMemo, useEffect, ReactNode } from 'react';
+import { useEffect, ReactNode } from 'react';
 import {
   Pagination,
   PaginationContent,
@@ -62,10 +62,7 @@ export function PaginatedGrid<T>({
   }, resetDeps);
 
   // Get paginated items
-  const paginatedItems = useMemo(() => 
-    items.slice(pagination.startIndex, pagination.endIndex),
-    [items, pagination.startIndex, pagination.endIndex]
-  );
+  const paginatedItems = items.slice(pagination.startIndex, pagination.endIndex);
 
   if (items.length === 0) {
     return emptyState ? <>{emptyState}</> : null;

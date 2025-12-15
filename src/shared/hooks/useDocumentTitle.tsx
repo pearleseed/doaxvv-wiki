@@ -7,14 +7,23 @@
  * - Follows format "[Page Title] | [Suffix]"
  * - Default suffix is "DOAXVV Wiki"
  * - Restores original title on unmount (optional)
- * 
- * Requirements: 9.1, 9.3, 9.5
+ * - Also exports DocumentTitleElement for React 19 native approach
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
 
 const DEFAULT_SUFFIX = 'DOAXVV Wiki';
 const DEFAULT_TITLE = 'Venus Vacation Wiki - DOAXVV Guide';
+
+/**
+ * Formats the document title according to the standard format
+ */
+function formatTitle(title: string, suffix: string): string {
+  if (!title || title.trim() === '') {
+    return DEFAULT_TITLE;
+  }
+  return `${title.trim()} | ${suffix}`;
+}
 
 /**
  * Hook for managing dynamic document titles
@@ -48,19 +57,8 @@ export function useDocumentTitle(
       originalTitleRef.current = document.title;
     }
 
-    // Determine the new title
-    let newTitle: string;
-    
-    if (!title || title.trim() === '') {
-      // Use default title when no specific title is provided (Requirement 9.5)
-      newTitle = DEFAULT_TITLE;
-    } else {
-      // Format: "[Page Title] | [Suffix]" (Requirement 9.3)
-      newTitle = `${title.trim()} | ${suffix}`;
-    }
-
-    // Update document title immediately (Requirement 9.4)
-    document.title = newTitle;
+    // Update document title immediately (Requirement 5.3)
+    document.title = formatTitle(title, suffix);
 
     // Cleanup: restore original title on unmount if requested
     return () => {
@@ -69,6 +67,35 @@ export function useDocumentTitle(
       }
     };
   }, [title, suffix, restoreOnUnmount]);
+}
+
+/**
+ * React 19 native document title element
+ * Returns a <title> element that React 19 automatically hoists to <head>
+ * 
+ * @param title - The page-specific title to display
+ * @param suffix - Optional suffix to append (default: "DOAXVV Wiki")
+ * @returns A React element to be rendered in the component tree
+ * 
+ * @example
+ * ```tsx
+ * function MyPage() {
+ *   return (
+ *     <>
+ *       {DocumentTitleElement('Characters')}
+ *       <div>Page content...</div>
+ *     </>
+ *   );
+ * }
+ * ```
+ */
+export function DocumentTitleElement(
+  title: string,
+  suffix: string = DEFAULT_SUFFIX
+): ReactElement {
+  const formattedTitle = formatTitle(title, suffix);
+  // React 19 native <title> element - automatically hoisted to <head>
+  return <title>{formattedTitle}</title>;
 }
 
 export default useDocumentTitle;

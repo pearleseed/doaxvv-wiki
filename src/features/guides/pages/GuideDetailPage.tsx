@@ -88,14 +88,7 @@ const GuideDetailPage = () => {
 
   const relatedCharacters = characters.slice(0, 4);
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy": return "bg-accent text-accent-foreground";
-      case "Medium": return "bg-primary text-primary-foreground";
-      case "Hard": return "bg-destructive text-destructive-foreground";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
+
 
   const getTopicLabel = (topic: string) => {
     const tag = tags.find(t => t.name.en === topic || t.unique_key === topic);
@@ -126,7 +119,6 @@ const GuideDetailPage = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8">
                 <div className="flex flex-wrap gap-2 mb-2 sm:mb-4">
-                  <Badge className={getDifficultyColor(guide.difficulty)}>{t(`difficulty.${guide.difficulty.toLowerCase()}`)}</Badge>
                   <Badge variant="outline" className="bg-background/90 text-foreground border-0">{categoryName}</Badge>
                 </div>
                 <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-2 sm:mb-4">{guideTitle}</h1>
@@ -297,7 +289,6 @@ const GuideDetailPage = () => {
                 title: g.title,
                 image: g.image,
                 href: `/guides/${g.unique_key}`,
-                badge: t(`difficulty.${g.difficulty.toLowerCase()}`),
                 description: g.summary,
               }))}
               viewAllHref="/guides"

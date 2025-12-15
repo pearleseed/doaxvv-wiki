@@ -32,7 +32,7 @@ export interface Guide extends BaseContent {
 export interface Character extends BaseContent {
   image: string;
   stats: { POW: number; TEC: number; STM: number; APL?: number };
-  // Localized fields
+  // Localized fieldsư
   name: LocalizedString;
   age?: LocalizedString;
   birthday: LocalizedString;
@@ -43,7 +43,7 @@ export interface Character extends BaseContent {
   hobby: LocalizedString;
   food?: LocalizedString;
   color?: LocalizedString;
-  cast?: Partial<Pick<LocalizedString, 'en' | 'jp' | 'cn' | 'tw' | 'kr'>>; // Cast for all languages
+  cast?: LocalizedString; // Cast for all languages
 }
 
 export interface SwimsuitSkill {
@@ -228,22 +228,36 @@ export interface Quiz {
   tags: string[];
 }
 
-// Validation rules
+// Validation rules - CSV field names (using _en/_jp suffix for localized fields)
 export const REQUIRED_FIELDS: Record<string, string[]> = {
-  base: ['id', 'title', 'unique_key', 'summary', 'category', 'tags', 'updated_at', 'author', 'status'],
-  guide: ['content_ref', 'read_time', 'image', 'topics', 'localizedTitle', 'content'],
-  character: ['image', 'stats', 'name', 'birthday', 'height', 'hobby'],
-  event: ['type', 'event_status', 'start_date', 'end_date', 'image', 'rewards', 'name'],
-  swimsuit: ['rarity', 'character_id', 'image', 'stats', 'name', 'skills'],
-  item: ['type', 'image', 'name'],
-  gacha: ['unique_key', 'image', 'start_date', 'end_date', 'gacha_status', 'rates', 'pity_at'],
-  episode: ['type', 'episode_status', 'image', 'name'],
-  category: ['id', 'name', 'unique_key', 'description', 'order'],
-  tag: ['id', 'name', 'unique_key', 'usage_count'],
-  tool: ['content_ref', 'image', 'localizedTitle', 'localizedSummary'],
-  accessory: ['rarity', 'image', 'obtain_method', 'name'],
-  mission: ['type', 'objectives', 'rewards', 'name'],
-  quiz: ['id', 'unique_key', 'name', 'difficulty', 'questions_ref']
+  // Base fields không áp dụng cho tất cả - mỗi type có required fields riêng
+  base: ['id', 'unique_key', 'updated_at', 'author', 'status'],
+  // Character: chỉ cần các trường cơ bản, localized fields check riêng
+  character: ['image', 'stats'],
+  // Swimsuit
+  swimsuit: ['rarity', 'character_id', 'image', 'stats'],
+  // Event
+  event: ['type', 'event_status', 'start_date', 'end_date', 'image'],
+  // Gacha - không dùng base fields
+  gacha: ['id', 'unique_key', 'image', 'start_date', 'end_date', 'gacha_status', 'pity_at'],
+  // Episode
+  episode: ['type', 'episode_status', 'image'],
+  // Item
+  item: ['type', 'image'],
+  // Guide
+  guide: ['content_ref', 'read_time', 'image'],
+  // Tool
+  tool: ['content_ref', 'image'],
+  // Accessory
+  accessory: ['rarity', 'image', 'obtain_method'],
+  // Mission
+  mission: ['type', 'objectives', 'rewards'],
+  // Quiz - không dùng base fields
+  quiz: ['id', 'unique_key', 'difficulty', 'questions_ref'],
+  // Category - không dùng base fields
+  category: ['id', 'unique_key', 'order'],
+  // Tag - không dùng base fields
+  tag: ['id', 'unique_key', 'usage_count']
 };
 
 export const VALID_STATUSES = ['draft', 'published', 'archived'] as const;

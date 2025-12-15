@@ -27,6 +27,8 @@ export default {
           'Apple Color Emoji',
           'Segoe UI Emoji',
         ],
+        quicksand: ['Quicksand', 'sans-serif'],
+        nunito: ['Nunito', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -138,6 +140,10 @@ export default {
         "dropdown-out": {
           "0%": { opacity: "1", transform: "scale(1) translateY(0)" },
           "100%": { opacity: "0", transform: "scale(0.95) translateY(-4px)" }
+        },
+        "spin-slow": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" }
         }
       },
       animation: {
@@ -151,7 +157,8 @@ export default {
         "slide-in-left": "slide-in-left 0.3s ease-out",
         "slide-out-left": "slide-out-left 0.3s ease-out",
         "dropdown-in": "dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
-        "dropdown-out": "dropdown-out 0.1s ease-in"
+        "dropdown-out": "dropdown-out 0.1s ease-in",
+        "spin-slow": "spin-slow 3s linear infinite"
       },
       backgroundImage: {
         "gradient-ocean": "var(--gradient-ocean)",

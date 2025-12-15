@@ -52,7 +52,6 @@ const MissionDetailPage = () => {
     switch (type) {
       case "Daily": return "bg-blue-500/80 text-white";
       case "Weekly": return "bg-purple-500/80 text-white";
-      case "Challenge": return "bg-orange-500/80 text-white";
       case "Event": return "bg-pink-500/80 text-white";
       default: return "bg-muted text-muted-foreground";
     }

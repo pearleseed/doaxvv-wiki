@@ -17,7 +17,7 @@ export {
   useRecentSearches,
   type UseRecentSearchesReturn 
 } from './useRecentSearches';
-export { useDocumentTitle } from './useDocumentTitle';
+export { useDocumentTitle, DocumentTitleElement } from './useDocumentTitle.tsx';
 
 // Unified Filter System
 export {

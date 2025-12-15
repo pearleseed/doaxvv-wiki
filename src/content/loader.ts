@@ -135,7 +135,7 @@ export function transformCharacter(raw: any): Character {
     hobby: createLocalizedStringFromCSV(raw, 'hobby'),
     food: raw.food_en ? createLocalizedStringFromCSV(raw, 'food') : undefined,
     color: raw.color_en ? createLocalizedStringFromCSV(raw, 'color') : undefined,
-    cast: raw.cast_en ? { en: raw.cast_en, jp: raw.cast_jp } : undefined,
+    cast: raw.cast_en ? createLocalizedStringFromCSV(raw, 'cast') : undefined,
   };
 }
 

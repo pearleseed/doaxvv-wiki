@@ -4,7 +4,7 @@
  * Only renders visible items + overscan for smooth scrolling
  */
 
-import { useRef, useCallback, ReactNode } from 'react';
+import { useRef, ReactNode } from 'react';
 import { useVirtualizer, VirtualItem } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils';
 
@@ -70,7 +70,7 @@ export function VirtualizedList<T>({
   const virtualRows = virtualizer.getVirtualItems();
 
   // Handle scroll for infinite loading
-  const handleScroll = useCallback(() => {
+  const handleScroll = () => {
     if (!onLoadMore || !hasMore) return;
     
     const container = parentRef.current;
@@ -83,7 +83,7 @@ export function VirtualizedList<T>({
     if (scrollPercentage > 0.8) {
       onLoadMore();
     }
-  }, [onLoadMore, hasMore]);
+  };
 
   // Empty state
   if (items.length === 0 && emptyState) {

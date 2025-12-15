@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -428,10 +428,10 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   className = '',
   enableToc = true,
 }: MarkdownRendererProps) {
-  const components = useMemo(() => createComponents(enableToc), [enableToc]);
-  const remarkPlugins = useMemo(() => [remarkGfm, remarkMath, remarkSupersub], []);
-  const rehypePlugins = useMemo(() => [rehypeRaw, rehypeKatex], []);
-  const processedContent = useMemo(() => preprocessMarkdown(content), [content]);
+  const components = createComponents(enableToc);
+  const remarkPlugins = [remarkGfm, remarkMath, remarkSupersub];
+  const rehypePlugins = [rehypeRaw, rehypeKatex];
+  const processedContent = preprocessMarkdown(content);
 
   if (!content) return null;
 

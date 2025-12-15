@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { LanguageSwitcher } from "@/shared/components/LanguageSwitcher";
 import { ThemeToggle } from "@/shared/components/ThemeToggle";
 import { DesktopNavigation, MobileNavigation } from "@/shared/layouts/navigation";
@@ -48,16 +48,14 @@ const Header = () => {
   const { searches: recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
 
   // Translate navigation groups
-  const translatedGroups = useMemo(() => {
-    return navigationGroups.map(group => ({
-      ...group,
-      label: t(`nav.${group.label.toLowerCase()}`),
-      items: group.items.map(item => ({
-        ...item,
-        label: t(`nav.${item.label.toLowerCase()}`),
-      }))
-    }));
-  }, [t]);
+  const translatedGroups = navigationGroups.map(group => ({
+    ...group,
+    label: t(`nav.${group.label.toLowerCase()}`),
+    items: group.items.map(item => ({
+      ...item,
+      label: t(`nav.${item.label.toLowerCase()}`),
+    }))
+  }));
 
   useEffect(() => {
     if (!debouncedQuery.trim()) {
@@ -107,29 +105,29 @@ const Header = () => {
     },
   ]);
 
-  const handleSelect = useCallback((result: SearchResult) => {
+  const handleSelect = (result: SearchResult) => {
     setSearchOpen(false);
     setQuery('');
     navigate(result.url);
-  }, [navigate]);
+  };
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = () => {
     if (query.trim()) {
       addSearch(query.trim()); // Add to recent searches (Requirement 6.1)
       setSearchOpen(false);
       navigate(`/search?q=${encodeURIComponent(query.trim())}`);
     }
-  }, [query, navigate, addSearch]);
+  };
 
   // Handle recent search selection
-  const handleRecentSearchSelect = useCallback((search: string) => {
+  const handleRecentSearchSelect = (search: string) => {
     setQuery(search);
     addSearch(search);
     setSearchOpen(false);
     navigate(`/search?q=${encodeURIComponent(search)}`);
-  }, [addSearch, navigate]);
+  };
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!searchOpen) {
       if (e.key === 'Enter') handleSubmit();
       return;
@@ -164,7 +162,7 @@ const Header = () => {
         setFocusedIndex(-1);
         break;
     }
-  }, [searchOpen, focusedIndex, flattenedResults, recentSearches, query, handleSelect, handleSubmit, handleRecentSearchSelect]);
+  };
 
   return (
     <>

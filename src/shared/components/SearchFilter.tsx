@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, Filter, SortAsc, X, Sliders, Calendar, Star, Clock } from "lucide-react";
 import { Input } from "@/shared/components/ui/input";
@@ -388,7 +388,7 @@ const SearchFilter = ({
   }, []);
 
   // Get preset configuration
-  const presetConfig = useMemo(() => getPresetConfig(preset, t), [preset, t]);
+  const presetConfig = getPresetConfig(preset, t);
 
   // Merge props with preset config
   const effectiveSortOptions = sortOptions || presetConfig.sortOptions || getDefaultSortOptions(t);
@@ -433,61 +433,61 @@ const SearchFilter = ({
   }, [search, selectedCategory, selectedTags, sort, selectedRarity, selectedStatus, selectedType, dateRange, setSearchParams]);
 
   // Handlers
-  const handleSearchChange = useCallback((value: string) => {
+  const handleSearchChange = (value: string) => {
     setSearch(value);
     onSearchChange(value);
-  }, [onSearchChange]);
+  };
 
-  const handleCategoryChange = useCallback((value: string) => {
+  const handleCategoryChange = (value: string) => {
     setSelectedCategory(value);
     onCategoryChange?.(value);
-  }, [onCategoryChange]);
+  };
 
-  const handleTagToggle = useCallback((tag: string) => {
+  const handleTagToggle = (tag: string) => {
     const newTags = selectedTags.includes(tag)
       ? selectedTags.filter(t => t !== tag)
       : [...selectedTags, tag];
     setSelectedTags(newTags);
     onTagsChange?.(newTags);
-  }, [selectedTags, onTagsChange]);
+  };
 
-  const handleSortChange = useCallback((value: string) => {
+  const handleSortChange = (value: string) => {
     setSort(value);
     onSortChange?.(value);
-  }, [onSortChange]);
+  };
 
-  const handleRarityChange = useCallback((value: string) => {
+  const handleRarityChange = (value: string) => {
     setSelectedRarity(value);
     onRarityChange?.(value);
-  }, [onRarityChange]);
+  };
 
-  const handleStatusChange = useCallback((value: string) => {
+  const handleStatusChange = (value: string) => {
     setSelectedStatus(value);
     onStatusChange?.(value);
-  }, [onStatusChange]);
+  };
 
-  const handleTypeChange = useCallback((value: string) => {
+  const handleTypeChange = (value: string) => {
     setSelectedType(value);
     onTypeChange?.(value);
-  }, [onTypeChange]);
+  };
 
-  const handleDateRangeChange = useCallback((key: 'start' | 'end', value: string) => {
+  const handleDateRangeChange = (key: 'start' | 'end', value: string) => {
     const newRange = { ...dateRange, [key]: value };
     setDateRange(newRange);
     onDateRangeChange?.(newRange.start || newRange.end ? newRange : null);
-  }, [dateRange, onDateRangeChange]);
+  };
 
-  const handleStatRangeChange = useCallback((key: string, value: [number, number]) => {
+  const handleStatRangeChange = (key: string, value: [number, number]) => {
     setStatRanges(prev => ({ ...prev, [key]: value }));
     onStatRangeChange?.(key, value);
-  }, [onStatRangeChange]);
+  };
 
-  const handleBooleanChange = useCallback((key: string, value: boolean) => {
+  const handleBooleanChange = (key: string, value: boolean) => {
     setBooleanStates(prev => ({ ...prev, [key]: value }));
     onBooleanFilterChange?.(key, value);
-  }, [onBooleanFilterChange]);
+  };
 
-  const clearFilters = useCallback(() => {
+  const clearFilters = () => {
     setSearch("");
     setSelectedCategory("All");
     setSelectedTags([]);
@@ -506,10 +506,10 @@ const SearchFilter = ({
     onStatusChange?.("All");
     onTypeChange?.("All");
     onDateRangeChange?.(null);
-  }, [onSearchChange, onCategoryChange, onTagsChange, onSortChange, onRarityChange, onStatusChange, onTypeChange, onDateRangeChange]);
+  };
 
   // Count active filters
-  const activeFilterCount = useMemo(() => {
+  const activeFilterCount = (() => {
     let count = 0;
     if (search) count++;
     if (selectedCategory !== "All") count++;
@@ -521,7 +521,7 @@ const SearchFilter = ({
     count += Object.keys(statRanges).length;
     count += Object.values(booleanStates).filter(Boolean).length;
     return count;
-  }, [search, selectedCategory, selectedTags, selectedRarity, selectedStatus, selectedType, dateRange, statRanges, booleanStates]);
+  })();
 
   const hasActiveFilters = activeFilterCount > 0 || sort !== "newest";
   const hasAdvancedFilters = effectiveRangeFilters.length > 0 || effectiveBooleanFilters.length > 0 || effectiveDateRangeFilter;

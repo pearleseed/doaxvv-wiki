@@ -5,13 +5,20 @@ import { type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { toggleVariants } from "./toggle-variants";
 
-const Toggle = React.forwardRef<
-  React.ElementRef<typeof TogglePrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> & VariantProps<typeof toggleVariants>
->(({ className, variant, size, ...props }, ref) => (
-  <TogglePrimitive.Root ref={ref} className={cn(toggleVariants({ variant, size, className }))} {...props} />
-));
+interface ToggleProps
+  extends React.ComponentProps<typeof TogglePrimitive.Root>,
+    VariantProps<typeof toggleVariants> {
+  ref?: React.Ref<React.ElementRef<typeof TogglePrimitive.Root>>;
+}
 
-Toggle.displayName = TogglePrimitive.Root.displayName;
+function Toggle({ className, variant, size, ref, ...props }: ToggleProps) {
+  return (
+    <TogglePrimitive.Root
+      ref={ref}
+      className={cn(toggleVariants({ variant, size, className }))}
+      {...props}
+    />
+  );
+}
 
 export { Toggle };
