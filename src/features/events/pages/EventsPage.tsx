@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
 import { Breadcrumb, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Alert, AlertDescription } from "@/shared/components/ui/alert";
-import { Clock, Gift } from "lucide-react";
+import { Calendar, Gift } from "lucide-react";
 import { useEvents } from "@/content/hooks";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
@@ -21,7 +21,6 @@ const EventsPage = () => {
   
   // Set dynamic page title (Requirements: 9.1, 9.2)
   useDocumentTitle(t('events.title'));
-  const [time, setTime] = useState(new Date());
 
   // Custom search function for events
   const customSearchFn = useMemo(() => {
@@ -58,18 +57,13 @@ const EventsPage = () => {
     defaultSort: 'newest',
   });
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const calculateTimeLeft = (endDate: Date | string) => {
-    const eventDate = endDate instanceof Date ? endDate : new Date(endDate);
-    const difference = eventDate.getTime() - time.getTime();
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((difference / 1000 / 60) % 60);
-    return { days, hours, minutes };
+  const formatDate = (date: Date | string) => {
+    const eventDate = date instanceof Date ? date : new Date(date);
+    return eventDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -151,7 +145,6 @@ const EventsPage = () => {
               </div>
             }
             renderItem={(event, index) => {
-              const timeLeft = calculateTimeLeft(event.end_date);
               return (
                 <Link to={`/events/${event.unique_key}`}>
                   <Card
@@ -173,31 +166,15 @@ const EventsPage = () => {
                           {t(`eventType.${event.type.toLowerCase()}`)}
                         </Badge>
                       </div>
-                      {event.event_status === "Active" && (
-                        <div className="absolute bottom-3 right-3 bg-background/95 backdrop-blur rounded-lg px-4 py-2 shadow-lg">
-                          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                            <Clock className="h-4 w-4 text-primary" />
-                            <span>
-                              {t('events.endsIn')
-                                .replace('{days}', timeLeft.days.toString())
-                                .replace('{hours}', timeLeft.hours.toString())
-                              }
-                            </span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                     
                     <CardHeader>
                       <CardTitle className="text-xl group-hover:text-primary transition-colors">
                         {event.title}
                       </CardTitle>
-                      <CardDescription>
-                        {event.event_status === "Active" 
-                          ? t('events.endsIn')
-                              .replace('{days}', timeLeft.days.toString())
-                              .replace('{hours}', timeLeft.hours.toString())
-                          : t('events.comingSoon')}
+                      <CardDescription className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {formatDate(event.start_date)}
                       </CardDescription>
                     </CardHeader>
 

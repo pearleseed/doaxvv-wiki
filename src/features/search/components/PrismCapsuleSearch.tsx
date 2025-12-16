@@ -301,7 +301,7 @@ export function PrismCapsuleSearch({
   }, [navigate]);
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-4">
+    <div className="w-full max-w-3xl mx-auto space-y-6">
       {/* Backdrop overlay to block clicks when dropdown is open */}
       {isOpen && (
         <div 

@@ -24,11 +24,13 @@ const Hero = () => {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 drop-shadow-lg">
             {t('hero.title')}
           </h1>
-          <p className="text-lg md:text-xl text-white/95 mb-8 drop-shadow">
+          <p className="text-lg md:text-xl text-white/95 mb-14 drop-shadow">
             {t('hero.subtitle')}
           </p>
           
-          <PrismCapsuleSearch placeholder={t('hero.searchPlaceholder')} />
+          <div className="mt-8">
+            <PrismCapsuleSearch placeholder={t('hero.searchPlaceholder')} />
+          </div>
         </div>
       </div>
     </section>

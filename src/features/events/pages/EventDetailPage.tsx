@@ -20,7 +20,6 @@ const EventDetailPage = () => {
   const [event, setEvent] = useState<Event | null>(null);
   const [otherEvents, setOtherEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [time, setTime] = useState(new Date());
 
   useEffect(() => {
     async function loadContent() {
@@ -34,20 +33,7 @@ const EventDetailPage = () => {
     loadContent();
   }, [unique_key]);
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
-  const calculateTimeLeft = (endDate: Date | string) => {
-    const eventDate = endDate instanceof Date ? endDate : new Date(endDate);
-    const difference = eventDate.getTime() - time.getTime();
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((difference / 1000 / 60) % 60);
-    const seconds = Math.floor((difference / 1000) % 60);
-    return { days, hours, minutes, seconds };
-  };
 
 
   if (loading) {
@@ -83,8 +69,6 @@ const EventDetailPage = () => {
     );
   }
 
-  const timeLeft = calculateTimeLeft(event.end_date);
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Active": return "bg-accent text-accent-foreground";
@@ -118,21 +102,6 @@ const EventDetailPage = () => {
                 <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-2 sm:mb-4">
                   <LocalizedText localized={event.name} showIndicator />
                 </h1>
-                
-                {event.event_status === "Active" && (
-                  <div className="flex flex-wrap gap-2 sm:gap-4">
-                    <div className="bg-background/95 backdrop-blur rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 shadow-lg">
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">{t('eventDetail.timeRemaining')}</div>
-                      <div className="flex items-center gap-1.5 sm:gap-3 text-sm sm:text-lg font-bold text-foreground">
-                        <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                        <span>{timeLeft.days}d</span>
-                        <span>{timeLeft.hours}h</span>
-                        <span>{timeLeft.minutes}m</span>
-                        <span className="hidden sm:inline">{timeLeft.seconds}s</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 

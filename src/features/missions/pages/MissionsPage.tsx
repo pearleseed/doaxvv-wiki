@@ -73,6 +73,7 @@ const MissionsPage = () => {
       case "Daily": return "bg-blue-500/80 text-white";
       case "Weekly": return "bg-purple-500/80 text-white";
       case "Event": return "bg-pink-500/80 text-white";
+      case "Owner": return "bg-yellow-500/80 text-black";
       default: return "bg-muted text-muted-foreground";
     }
   };

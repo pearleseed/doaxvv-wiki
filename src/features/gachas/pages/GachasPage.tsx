@@ -5,12 +5,11 @@ import { Breadcrumb, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI }
 import { ResponsiveContainer } from "@/shared/components/responsive";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
-import { Sparkles, Percent, Clock, Star } from "lucide-react";
+import { Sparkles, Percent, Calendar, Star } from "lucide-react";
 import { Progress } from "@/shared/components/ui/progress";
 import { contentLoader } from "@/content";
 import { useLanguage } from "@/shared/contexts/language-hooks";
 import { getLocalizedValue } from "@/shared/utils/localization";
-import { calculateTimeRemaining, formatTimeRemaining } from "@/shared/utils/countdown";
 import type { Gacha } from "@/content/schemas/content.schema";
 import { useTranslation } from "@/shared/hooks/useTranslation";
 import { useDocumentTitle } from "@/shared/hooks/useDocumentTitle";
@@ -26,7 +25,6 @@ const GachasPage = () => {
   
   const [gachas, setGachas] = useState<Gacha[]>([]);
   const [loading, setLoading] = useState(true);
-  const [time, setTime] = useState(new Date());
   const { currentLanguage } = useLanguage();
 
   useEffect(() => {
@@ -39,22 +37,13 @@ const GachasPage = () => {
     loadContent();
   }, []);
 
-  // Update countdown timer every second
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const getTimeDisplay = (gacha: Gacha) => {
-    if (gacha.gacha_status === 'Coming Soon') {
-      const timeToStart = calculateTimeRemaining(new Date(gacha.start_date), time);
-      return timeToStart.isExpired ? t('gachas.startingSoon') : t('gachas.startsIn').replace('{time}', formatTimeRemaining(timeToStart));
-    }
-    if (gacha.gacha_status === 'Active') {
-      const timeRemaining = calculateTimeRemaining(new Date(gacha.end_date), time);
-      return timeRemaining.isExpired ? t('gachas.endingSoon') : formatTimeRemaining(timeRemaining);
-    }
-    return t('gachas.ended');
+  const formatDate = (date: string | Date) => {
+    const gachaDate = new Date(date);
+    return gachaDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   // Custom search function for gachas
@@ -201,17 +190,16 @@ const GachasPage = () => {
                       )}
                     </div>
 
-                    <div className="absolute bottom-3 right-3 bg-background/95 backdrop-blur rounded-lg px-3 py-2">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                        <Clock className="h-3 w-3 text-primary" />
-                        <span>{getTimeDisplay(gacha)}</span>
-                      </div>
-                    </div>
-
-                    <div className="absolute bottom-3 left-3">
+                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                       <h3 className="text-xl font-bold text-white drop-shadow-lg">
                         {gachaName}
                       </h3>
+                      <div className="bg-background/95 backdrop-blur rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                          <Calendar className="h-3 w-3 text-primary" />
+                          <span>{formatDate(gacha.start_date)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

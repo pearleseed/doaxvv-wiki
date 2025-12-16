@@ -187,7 +187,7 @@ export interface Accessory extends BaseContent {
 }
 
 export interface Mission extends BaseContent {
-  type: 'Daily' | 'Weekly' | 'Event';
+  type: 'Daily' | 'Weekly' | 'Event' | 'Owner';
   event_id?: string;                 // Related event unique_key
   image?: string;
   objectives: string[];              // List of objectives
@@ -270,6 +270,6 @@ export const VALID_EPISODE_TYPES = ['Character', 'Gravure', 'Event', 'Extra', 'B
 export const VALID_EPISODE_STATUSES = ['Available', 'Coming Soon', 'Limited'] as const;
 export const VALID_ACCESSORY_RARITIES = ['SSR', 'SR', 'R'] as const;
 export const VALID_OBTAIN_METHODS = ['Event', 'Gacha', 'Shop', 'Quest', 'Login'] as const;
-export const VALID_MISSION_TYPES = ['Daily', 'Weekly', 'Event'] as const;
+export const VALID_MISSION_TYPES = ['Daily', 'Weekly', 'Event', 'Owner'] as const;
 export const VALID_QUIZ_DIFFICULTIES = ['Easy', 'Medium', 'Hard'] as const;
 export const VALID_QUIZ_STATUSES = ['draft', 'published', 'archived'] as const;

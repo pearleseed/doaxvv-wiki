@@ -17,9 +17,9 @@ export function Footer() {
         <p>
           © {currentYear} {t('app.title')}. {t('footer.rights')}
         </p>
-        <p className="mt-2 text-xs">
+        {/* <p className="mt-2 text-xs">
           {t('footer.disclaimer')}
-        </p>
+        </p> */}
       </div>
     </footer>
   );

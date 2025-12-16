@@ -18,7 +18,6 @@ const FestivalDetailPage = () => {
   const [festival, setFestival] = useState<Event | null>(null);
   const [relatedFestivals, setRelatedFestivals] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [time, setTime] = useState(new Date());
   const { currentLanguage } = useLanguage();
   const { t } = useTranslation();
 
@@ -40,22 +39,6 @@ const FestivalDetailPage = () => {
     }
     loadContent();
   }, [unique_key]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const calculateTimeLeft = (endDate: string | Date) => {
-    const eventDate = new Date(endDate);
-    const difference = eventDate.getTime() - time.getTime();
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((difference / 1000 / 60) % 60);
-    const seconds = Math.floor((difference / 1000) % 60);
-    return { days, hours, minutes, seconds };
-  };
-
 
   const formatDateRange = (startDate: string | Date, endDate: string | Date) => {
     const start = new Date(startDate);
@@ -95,8 +78,6 @@ const FestivalDetailPage = () => {
       </div>
     );
   }
-
-  const timeLeft = calculateTimeLeft(festival.end_date);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,21 +120,6 @@ const FestivalDetailPage = () => {
               <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">
                 <LocalizedText localized={festival.name} showIndicator />
               </h1>
-              
-              {festival.event_status === "Active" && (
-                <div className="flex flex-wrap gap-4">
-                  <div className="bg-background/95 backdrop-blur rounded-lg px-4 py-2 shadow-lg">
-                    <div className="text-xs text-muted-foreground mb-1">{t('festivalDetail.timeRemaining')}</div>
-                    <div className="flex items-center gap-3 text-lg font-bold text-foreground">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <span>{timeLeft.days}d</span>
-                      <span>{timeLeft.hours}h</span>
-                      <span>{timeLeft.minutes}m</span>
-                      <span>{timeLeft.seconds}s</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

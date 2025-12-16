@@ -278,6 +278,7 @@ const getPresetConfig = (preset: FilterPreset, t: (key: string) => string) => {
         { value: "Daily", label: t('missionType.daily') },
         { value: "Weekly", label: t('missionType.weekly') },
         { value: "Event", label: t('missionType.event') },
+        { value: "Owner", label: t('missionType.owner') },
       ],
       sortOptions: [
         { value: "newest", label: t('sort.newest') },

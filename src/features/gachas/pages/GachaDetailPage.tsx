@@ -17,7 +17,6 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
 import { useLanguage } from "@/shared/contexts/language-hooks";
 import { getLocalizedValue } from "@/shared/utils/localization";
-import { calculateTimeRemaining, formatTimeRemaining } from "@/shared/utils/countdown";
 import type { Gacha, Character, Swimsuit } from "@/content/schemas/content.schema";
 import { contentLoader } from "@/content";
 
@@ -29,7 +28,6 @@ const GachaDetailPage = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [swimsuits, setSwimsuits] = useState<Swimsuit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [time, setTime] = useState(new Date());
   const [copied, setCopied] = useState(false);
   const { currentLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -72,10 +70,7 @@ const GachaDetailPage = () => {
     loadContent();
   }, [unique_key]);
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -145,7 +140,6 @@ const GachaDetailPage = () => {
     );
   }
 
-  const timeRemaining = calculateTimeRemaining(new Date(gacha.end_date), time);
   const gachaType = getTypeFromName(getLocalizedValue(gacha.name, "en"));
   const bannerRating = getBannerRating();
   const expectedPulls = getExpectedPulls();
@@ -231,18 +225,6 @@ const GachaDetailPage = () => {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                
-                {gacha.gacha_status === "Active" && !timeRemaining.isExpired && (
-                  <div className="inline-flex bg-background/95 backdrop-blur rounded-lg px-4 py-2 shadow-lg">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">{t('gachaDetail.endsIn')}</div>
-                        <div className="text-lg font-bold text-foreground">{formatTimeRemaining(timeRemaining)}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -320,13 +302,11 @@ const GachaDetailPage = () => {
                                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                                     />
                                   </div>
-                                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                   <div className="p-2">
                                     <p className="font-medium text-foreground text-sm truncate">
                                       <LocalizedText localized={character.name} />
                                     </p>
                                   </div>
-                                  <ChevronRight className="absolute bottom-2 right-2 h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                               </Link>
                             ))}
@@ -433,15 +413,6 @@ const GachaDetailPage = () => {
                             {Math.ceil((new Date(gacha.end_date).getTime() - new Date(gacha.start_date).getTime()) / (1000 * 60 * 60 * 24))} {t('gachaDetail.days')}
                           </span>
                         </div>
-                        {gacha.gacha_status === "Active" && !timeRemaining.isExpired && (
-                          <>
-                            <Separator />
-                            <div className="p-3 bg-primary/10 rounded-lg">
-                              <div className="text-xs text-muted-foreground mb-1">{t('gachaDetail.timeRemaining')}</div>
-                              <div className="text-lg font-bold text-primary">{formatTimeRemaining(timeRemaining)}</div>
-                            </div>
-                          </>
-                        )}
                         <Separator />
                         <UniqueKeyDisplay uniqueKey={gacha.unique_key} />
                       </CardContent>

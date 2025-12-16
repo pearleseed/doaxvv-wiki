@@ -216,6 +216,7 @@ export const getPresetConfig = (preset: FilterPreset, t: TranslationFn): PresetC
         { value: 'Daily', label: t('missionType.daily') },
         { value: 'Weekly', label: t('missionType.weekly') },
         { value: 'Event', label: t('missionType.event') },
+        { value: 'Owner', label: t('missionType.owner') },
       ],
     },
 

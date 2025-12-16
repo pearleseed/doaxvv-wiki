@@ -5,7 +5,7 @@ import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, ScrollToT
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Calendar, Clock, Gift, Sparkles } from "lucide-react";
+import { Calendar, Gift, Sparkles } from "lucide-react";
 import { contentLoader } from "@/content";
 import type { Event } from "@/content";
 import { useLanguage } from "@/shared/contexts/language-hooks";
@@ -22,7 +22,6 @@ const FestivalsPage = () => {
   
   const [festivals, setFestivals] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [time, setTime] = useState(new Date());
   const { currentLanguage } = useLanguage();
 
   useEffect(() => {
@@ -77,24 +76,13 @@ const FestivalsPage = () => {
   });
 
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const calculateTimeLeft = (endDate: string | Date) => {
-    const eventDate = new Date(endDate);
-    const difference = eventDate.getTime() - time.getTime();
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((difference / 1000 / 60) % 60);
-    return { days, hours, minutes };
-  };
-
-  const formatDateRange = (startDate: string | Date, endDate: string | Date) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+  const formatDate = (date: string | Date) => {
+    const eventDate = new Date(date);
+    return eventDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -154,7 +142,6 @@ const FestivalsPage = () => {
           {/* Card grid: 1 col mobile, 2 col desktop */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredFestivals.map((festival, index) => {
-            const timeLeft = calculateTimeLeft(festival.end_date);
             return (
               <Link key={festival.id} to={`/festivals/${festival.unique_key}`}>
                 <Card
@@ -177,14 +164,6 @@ const FestivalsPage = () => {
                         {t('festivals.badge')}
                       </Badge>
                     </div>
-                    {festival.event_status === "Active" && (
-                      <div className="absolute bottom-3 right-3 bg-background/95 backdrop-blur rounded-lg px-4 py-2 shadow-lg">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                          <Clock className="h-4 w-4 text-primary" />
-                          <span>{timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                   
                   <CardHeader>
@@ -193,7 +172,7 @@ const FestivalsPage = () => {
                     </CardTitle>
                     <CardDescription className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      {formatDateRange(festival.start_date, festival.end_date)}
+                      {formatDate(festival.start_date)}
                     </CardDescription>
                   </CardHeader>
 
