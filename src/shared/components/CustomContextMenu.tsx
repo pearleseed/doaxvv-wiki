@@ -26,16 +26,32 @@ const NAV_ACTIONS = [
   { id: "refresh", icon: <RefreshCw size={16} />, action: () => window.location.reload(), label: "Refresh" },
 ];
 
-const ZOOM_ACTIONS = [
-  { id: "zoomOut", icon: <ZoomOut size={16} />, label: "Zoom Out", action: () => setZoom(-0.1) },
-  { id: "resetZoom", icon: <RotateCcw size={16} />, label: "Reset", action: () => { document.body.style.zoom = "1"; } },
-  { id: "zoomIn", icon: <ZoomIn size={16} />, label: "Zoom In", action: () => setZoom(0.1) },
-];
+// Cross-browser zoom using CSS transform (works on Firefox, Chrome, Safari, Edge)
+const getZoomLevel = () => {
+  const transform = document.body.style.transform;
+  const match = transform.match(/scale\(([^)]+)\)/);
+  return match ? parseFloat(match[1]) : 1;
+};
 
 const setZoom = (delta: number) => {
-  const z = parseFloat(document.body.style.zoom || "1");
-  document.body.style.zoom = String(Math.max(0.5, Math.min(2, z + delta)));
+  const currentZoom = getZoomLevel();
+  const newZoom = Math.max(0.5, Math.min(2, currentZoom + delta));
+  document.body.style.transform = `scale(${newZoom})`;
+  document.body.style.transformOrigin = "top left";
+  document.body.style.width = `${100 / newZoom}%`;
 };
+
+const resetZoom = () => {
+  document.body.style.transform = "";
+  document.body.style.transformOrigin = "";
+  document.body.style.width = "";
+};
+
+const ZOOM_ACTIONS = [
+  { id: "zoomOut", icon: <ZoomOut size={16} />, label: "Zoom Out", action: () => setZoom(-0.1) },
+  { id: "resetZoom", icon: <RotateCcw size={16} />, label: "Reset", action: resetZoom },
+  { id: "zoomIn", icon: <ZoomIn size={16} />, label: "Zoom In", action: () => setZoom(0.1) },
+];
 
 export const CustomContextMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,7 +83,33 @@ export const CustomContextMenu = () => {
     }},
     { id: "newTab", label: "Open in New Tab", icon: <ExternalLink size={14} />, divider: true, action: () => window.open(window.location.href, "_blank") },
     { id: "fullscreen", label: "Fullscreen", icon: <Fullscreen size={14} />, shortcut: "F11", action: () => {
-      document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+      try {
+        const doc = document as Document & {
+          webkitFullscreenElement?: Element;
+          webkitExitFullscreen?: () => Promise<void>;
+        };
+        const docEl = document.documentElement as HTMLElement & {
+          webkitRequestFullscreen?: () => Promise<void>;
+        };
+        
+        const isFullscreen = document.fullscreenElement || doc.webkitFullscreenElement;
+        
+        if (isFullscreen) {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (doc.webkitExitFullscreen) {
+            doc.webkitExitFullscreen();
+          }
+        } else {
+          if (docEl.requestFullscreen) {
+            docEl.requestFullscreen();
+          } else if (docEl.webkitRequestFullscreen) {
+            docEl.webkitRequestFullscreen();
+          }
+        }
+      } catch (error) {
+        console.error("Fullscreen error:", error);
+      }
     }},
     { id: "print", label: "Print", icon: <Printer size={14} />, shortcut: "⌘P", divider: true, action: () => window.print() },
     { id: "more", label: "More Tools", icon: <MoreHorizontal size={14} />, children: [
@@ -86,15 +128,22 @@ export const CustomContextMenu = () => {
   ];
 
   const handleContextMenu = useCallback((e: MouseEvent) => {
+    // Prevent default FIRST to ensure custom menu shows
     e.preventDefault();
-    const target = e.target as HTMLElement;
-    setHasSelection(!!window.getSelection()?.toString());
-    setImageUrl(target.tagName === "IMG" ? (target as HTMLImageElement).src : null);
-    setActiveSubmenu(null);
-    clickPos.current = { x: e.clientX, y: e.clientY };
-    setSubmenuDir(e.clientX + 400 > window.innerWidth ? "left" : "right");
-    setPosition({ x: Math.min(e.clientX, window.innerWidth - 208), y: e.clientY });
-    setIsOpen(true);
+    e.stopPropagation();
+    
+    try {
+      const target = e.target as HTMLElement;
+      setHasSelection(!!window.getSelection()?.toString());
+      setImageUrl(target.tagName === "IMG" ? (target as HTMLImageElement).src : null);
+      setActiveSubmenu(null);
+      clickPos.current = { x: e.clientX, y: e.clientY };
+      setSubmenuDir(e.clientX + 400 > window.innerWidth ? "left" : "right");
+      setPosition({ x: Math.min(e.clientX, window.innerWidth - 208), y: e.clientY });
+      setIsOpen(true);
+    } catch (error) {
+      console.error("CustomContextMenu error:", error);
+    }
   }, []);
 
   // Adjust vertical position after render
@@ -112,12 +161,15 @@ export const CustomContextMenu = () => {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
-    document.addEventListener("contextmenu", handleContextMenu);
+    
+    // Use capture phase to intercept event before other handlers
+    document.addEventListener("contextmenu", handleContextMenu, { capture: true });
     document.addEventListener("click", close);
     document.addEventListener("keydown", onKey);
     document.addEventListener("scroll", close);
+    
     return () => {
-      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("contextmenu", handleContextMenu, { capture: true });
       document.removeEventListener("click", close);
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("scroll", close);

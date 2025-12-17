@@ -89,6 +89,10 @@ export interface Event extends BaseContent {
   rewards: string[];
   how_to_participate: string[];
   tips: string[];
+  // Related content links
+  gacha_ids?: string[];              // Related gacha unique_keys
+  episode_ids?: string[];            // Related episode unique_keys
+  mission_ids?: string[];            // Related mission unique_keys
   // Localized fields
   name: LocalizedString;
   description?: LocalizedString;

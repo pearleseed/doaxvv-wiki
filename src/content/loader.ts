@@ -225,6 +225,10 @@ export function transformEvent(raw: any): Event {
     rewards: raw.rewards_en ? raw.rewards_en.split('|') : [],
     how_to_participate: raw.how_to_participate_en ? raw.how_to_participate_en.split('|') : [],
     tips: raw.tips_en ? raw.tips_en.split('|') : [],
+    // Related content links
+    gacha_ids: raw.gacha_ids ? raw.gacha_ids.split('|') : [],
+    episode_ids: raw.episode_ids ? raw.episode_ids.split('|') : [],
+    mission_ids: raw.mission_ids ? raw.mission_ids.split('|') : [],
     // LocalizedString fields
     name: createLocalizedStringFromCSV(raw, 'name'),
     description: raw.description_en ? createLocalizedStringFromCSV(raw, 'description') : undefined,

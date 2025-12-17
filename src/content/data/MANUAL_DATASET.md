@@ -443,16 +443,31 @@ Format ô: Number, 1-2 decimal places
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | `related_ids` | string | ID liên quan (phân cách `\|`) |
+| `gacha_ids` | string | Gacha liên quan (unique_key, phân cách `\|`) |
+| `episode_ids` | string | Episode liên quan (unique_key, phân cách `\|`) |
+| `mission_ids` | string | Mission liên quan (unique_key, phân cách `\|`) |
 | `name_cn`, `name_tw`, `name_kr` | string | Tên đa ngôn ngữ |
 | `description_en`, `description_jp` | string | Mô tả |
 | `rewards_en`, `rewards_jp` | string | Phần thưởng (phân cách `\|`) |
 | `how_to_participate_en`, `how_to_participate_jp` | string | Cách tham gia (phân cách `\|`) |
 | `tips_en`, `tips_jp` | string | Mẹo (phân cách `\|`) |
 
+#### Liên Kết Với Các Dataset Khác
+
+Event có thể liên kết với các dataset khác thông qua các trường:
+- `gacha_ids`: Liên kết với các banner gacha liên quan đến event
+- `episode_ids`: Liên kết với các episode/story liên quan đến event
+- `mission_ids`: Liên kết với các mission đặc biệt của event
+
+Ví dụ: Event "Summer Splash Festival" có thể liên kết với:
+- Gacha: `summer-paradise-nostalgia` (banner gacha của event)
+- Episode: `summer-festival-event` (story của event)
+- Mission: `ocean-adventure-event` (mission đặc biệt)
+
 #### Ví Dụ Thêm Bản Ghi Mới
 
 ```csv
-30,new-festival-event,Main,Upcoming,2025-01-01T00:00:00Z,2025-01-15T23:59:00Z,https://images.unsplash.com/photo-xxx,2024-12-15,WikiTeam,published,related-gacha|related-swimsuit,New Festival,新フェスティバル,新节日,新節日,새 페스티벌,A brand new festival event,新しいフェスティバルイベント,SSR Ticket x1|5000 V-Stones,SSRチケット×1|5000 Vストーン,Complete missions|Collect tokens,ミッションクリア|トークン集め,Use boosted characters,ブーストキャラを使用
+30,new-festival-event,Main,Upcoming,2025-01-01T00:00:00Z,2025-01-15T23:59:00Z,https://images.unsplash.com/photo-xxx,2024-12-15,WikiTeam,published,related-gacha|related-swimsuit,new-year-gacha,new-year-episode,new-year-mission,New Festival,新フェスティバル,新节日,新節日,새 페스티벌,A brand new festival event,新しいフェスティバルイベント,SSR Ticket x1|5000 V-Stones,SSRチケット×1|5000 Vストーン,Complete missions|Collect tokens,ミッションクリア|トークン集め,Use boosted characters,ブーストキャラを使用
 ```
 
 ---

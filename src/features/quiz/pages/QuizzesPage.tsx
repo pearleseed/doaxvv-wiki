@@ -556,7 +556,7 @@ const QuizzesPage = () => {
                         }`}
                         style={{ animationDelay: `${index * 0.05}s` }}
                       >
-                        <div className="relative h-40 overflow-hidden">
+                        <div className="relative h-52 overflow-hidden">
                           <DatasetImage
                             src={quiz.image}
                             alt={quizName}

@@ -5,9 +5,9 @@ import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, UniqueKey
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Clock, Gift, Lightbulb, CheckCircle, Calendar, Info, Target, Sparkles } from "lucide-react";
+import { Gift, Calendar, Info, Target, Sparkles } from "lucide-react";
 import { contentLoader } from "@/content";
-import type { Event } from "@/content";
+import type { Event, Gacha, Episode, Mission } from "@/content";
 import { getLocalizedValue } from "@/shared/utils/localization";
 import { RelatedContent } from "@/shared/components";
 import { useTranslation } from "@/shared/hooks/useTranslation";
@@ -19,6 +19,9 @@ const EventDetailPage = () => {
   const { currentLanguage } = useLanguage();
   const [event, setEvent] = useState<Event | null>(null);
   const [otherEvents, setOtherEvents] = useState<Event[]>([]);
+  const [relatedGachas, setRelatedGachas] = useState<Gacha[]>([]);
+  const [relatedEpisodes, setRelatedEpisodes] = useState<Episode[]>([]);
+  const [relatedMissions, setRelatedMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +31,34 @@ const EventDetailPage = () => {
       setEvent(foundEvent || null);
       const allEvents = contentLoader.getEvents();
       setOtherEvents(allEvents.filter(e => e.id !== foundEvent?.id).slice(0, 3));
+      
+      // Load related content
+      if (foundEvent) {
+        // Load related gachas
+        if (foundEvent.gacha_ids && foundEvent.gacha_ids.length > 0) {
+          const gachas = foundEvent.gacha_ids
+            .map(id => contentLoader.getGachaByUniqueKey(id))
+            .filter((g): g is Gacha => g !== undefined);
+          setRelatedGachas(gachas);
+        }
+        
+        // Load related episodes
+        if (foundEvent.episode_ids && foundEvent.episode_ids.length > 0) {
+          const episodes = foundEvent.episode_ids
+            .map(id => contentLoader.getEpisodeByUniqueKey(id))
+            .filter((e): e is Episode => e !== undefined);
+          setRelatedEpisodes(episodes);
+        }
+        
+        // Load related missions
+        if (foundEvent.mission_ids && foundEvent.mission_ids.length > 0) {
+          const missions = foundEvent.mission_ids
+            .map(id => contentLoader.getMissionByKey(id))
+            .filter((m): m is Mission => m !== undefined);
+          setRelatedMissions(missions);
+        }
+      }
+      
       setLoading(false);
     }
     loadContent();
@@ -214,6 +245,56 @@ const EventDetailPage = () => {
                 </Card>
               </div>
             </div>
+
+            {/* Related Gachas */}
+            {relatedGachas.length > 0 && (
+              <RelatedContent
+                title={t('eventDetail.relatedGachas')}
+                items={relatedGachas.map(gacha => ({
+                  id: gacha.id,
+                  title: getLocalizedValue(gacha.name, currentLanguage),
+                  image: gacha.image,
+                  href: `/gachas/${gacha.unique_key}`,
+                  badge: gacha.gacha_status,
+                }))}
+                viewAllHref="/gachas"
+                viewAllLabel={t('nav.gachas')}
+              />
+            )}
+
+            {/* Related Episodes */}
+            {relatedEpisodes.length > 0 && (
+              <RelatedContent
+                title={t('eventDetail.relatedEpisodes')}
+                items={relatedEpisodes.map(episode => ({
+                  id: episode.id,
+                  title: getLocalizedValue(episode.name, currentLanguage),
+                  image: episode.image,
+                  href: `/episodes/${episode.unique_key}`,
+                  badge: episode.episode_status,
+                  description: getLocalizedValue(episode.description, currentLanguage),
+                }))}
+                viewAllHref="/episodes"
+                viewAllLabel={t('nav.episodes')}
+              />
+            )}
+
+            {/* Related Missions */}
+            {relatedMissions.length > 0 && (
+              <RelatedContent
+                title={t('eventDetail.relatedMissions')}
+                items={relatedMissions.map(mission => ({
+                  id: mission.id,
+                  title: getLocalizedValue(mission.name, currentLanguage),
+                  image: mission.image || '',
+                  href: `/missions/${mission.unique_key}`,
+                  badge: mission.type,
+                  description: getLocalizedValue(mission.description, currentLanguage),
+                }))}
+                viewAllHref="/missions"
+                viewAllLabel={t('nav.missions')}
+              />
+            )}
 
             {/* Related Events */}
             <RelatedContent
