@@ -49,12 +49,15 @@ const GuideDetailPage = () => {
   const isPDF = useMemo(() => isPDFFile(guide?.content_ref), [guide?.content_ref]);
   const hasPdfAttachment = useMemo(() => !!guide?.pdf_attachment, [guide?.pdf_attachment]);
   
-  // Resolve PDF path helper
+  // Resolve PDF path helper - PDFs are served from public/guides/
   const resolvePdfPath = (path: string | undefined): string => {
     if (!path) return '';
     const normalized = normalizePath(path);
-    if (normalized.startsWith('guides/')) {
-      return `/src/content/data/${normalized}`;
+    // Extract just the filename if it's a full path
+    const filename = normalized.split('/').pop() || normalized;
+    // All PDFs are served from /guides/ (public folder)
+    if (filename.endsWith('.pdf')) {
+      return `/guides/${filename}`;
     }
     return normalized;
   };
@@ -165,83 +168,43 @@ const GuideDetailPage = () => {
             {/* Table of Contents - Sidebar */}
             <aside className="lg:col-span-1 order-2 lg:order-1">
               <div className="lg:sticky lg:top-24 space-y-6">
-                {/* TOC */}
-                <Card className="border-border/50 bg-card shadow-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <List className="h-5 w-5 text-primary" />
-                      {t('guideDetail.tableOfContents')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <nav className="space-y-1">
-                      {/* Markdown sections */}
-                      {markdownSections.length > 0 && markdownSections
-                        .filter(section => section.level <= 2)
-                        .map((section, index) => {
-                          const sectionId = `section-${section.id}`;
-                          return (
-                            <button
-                              key={`md-${index}`}
-                              onClick={() => scrollToSection(sectionId)}
-                              className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
-                                section.level === 2 ? 'pl-6' : ''
-                              } ${
-                                activeSection === sectionId
-                                  ? "bg-primary/10 text-primary font-medium"
-                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                              }`}
-                            >
-                              {section.title}
-                            </button>
-                          );
-                        })
-                      }
-
-                      {/* PDF pages - show when PDF is main content or attachment */}
-                      {(isPDF || hasPdfAttachment) && pdfPageCount > 0 && (
-                        <>
-                          {markdownSections.length > 0 && (
-                            <div className="py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              {t('guideDetail.pdfPages') || 'PDF Pages'}
-                            </div>
-                          )}
-                          {Array.from({ length: Math.min(pdfPageCount, 20) }, (_, i) => (
-                            <button
-                              key={`pdf-${i + 1}`}
-                              onClick={() => setActiveSection(`page-${i + 1}`)}
-                              className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
-                                activeSection === `page-${i + 1}`
-                                  ? "bg-primary/10 text-primary font-medium"
-                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                              }`}
-                            >
-                              {t('guideDetail.page') || 'Page'} {i + 1}
-                            </button>
-                          ))}
-                        </>
-                      )}
-
-                      {/* Fallback to topics when no markdown and no PDF */}
-                      {markdownSections.length === 0 && !isPDF && !hasPdfAttachment && guide.topics.map((topic, index) => {
-                        const sectionId = `section-${index}`;
-                        return (
-                          <button
-                            key={`topic-${index}`}
-                            onClick={() => scrollToSection(sectionId)}
-                            className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
-                              activeSection === sectionId
-                                ? "bg-primary/10 text-primary font-medium"
-                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                            }`}
-                          >
-                            {getTopicLabel(topic)}
-                          </button>
-                        );
-                      })}
-                    </nav>
-                  </CardContent>
-                </Card>
+                {/* TOC - Only show if has markdown content (not PDF-only guides) */}
+                {!isPDF && markdownSections.length > 0 && (
+                  <Card className="border-border/50 bg-card shadow-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <List className="h-5 w-5 text-primary" />
+                        {t('guideDetail.tableOfContents')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <nav className="space-y-1">
+                        {/* Markdown sections only */}
+                        {markdownSections
+                          .filter(section => section.level <= 2)
+                          .map((section, index) => {
+                            const sectionId = `section-${section.id}`;
+                            return (
+                              <button
+                                key={`md-${index}`}
+                                onClick={() => scrollToSection(sectionId)}
+                                className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
+                                  section.level === 2 ? 'pl-6' : ''
+                                } ${
+                                  activeSection === sectionId
+                                    ? "bg-primary/10 text-primary font-medium"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                }`}
+                              >
+                                {section.title}
+                              </button>
+                            );
+                          })
+                        }
+                      </nav>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Guide Info */}
                 <Card className="border-border/50 bg-card shadow-card">

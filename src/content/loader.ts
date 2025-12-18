@@ -82,30 +82,20 @@ import accessoriesCSV from './data/accessories.csv?raw';
 import missionsCSV from './data/missions.csv?raw';
 import quizzesCSV from './data/quizzes.csv?raw';
 
-/**
- * Helper function to create a LocalizedString from CSV fields
- * Looks for fields with _en, _jp, _cn, _tw, _kr suffixes
- */
+/** Create LocalizedString from CSV fields with _en, _jp, _cn, _tw, _kr suffixes */
 export function createLocalizedStringFromCSV(raw: any, fieldName: string): LocalizedString {
+  const base = raw[fieldName] || '';
   return {
-    en: raw[`${fieldName}_en`] || raw[fieldName] || '',
-    jp: raw[`${fieldName}_jp`] || raw[fieldName] || '',
+    en: raw[`${fieldName}_en`] || base,
+    jp: raw[`${fieldName}_jp`] || base,
     cn: raw[`${fieldName}_cn`] || undefined,
     tw: raw[`${fieldName}_tw`] || undefined,
     kr: raw[`${fieldName}_kr`] || undefined,
   };
 }
 
-/**
- * Helper function to create a LocalizedString from a single value (fallback)
- * Uses the same value for both en and jp (required fields)
- */
-export function createLocalizedString(value: string): LocalizedString {
-  return {
-    en: value,
-    jp: value,
-  };
-}
+/** Create LocalizedString from a single value (fallback for both en and jp) */
+export const createLocalizedString = (value: string): LocalizedString => ({ en: value, jp: value });
 
 /**
  * Transform raw character data to include LocalizedString fields
@@ -262,6 +252,16 @@ export function transformItem(raw: any): Item {
  * Transform raw guide data to include LocalizedString fields
  */
 export function transformGuide(raw: any): Guide {
+  // Parse content_ref - supports "file.md|file.pdf" format for hybrid guides
+  let contentRef = raw.content_ref || '';
+  let pdfAttachment: string | undefined;
+  
+  if (contentRef.includes('|')) {
+    const parts = contentRef.split('|');
+    contentRef = parts[0]; // First part is markdown
+    pdfAttachment = parts[1]; // Second part is PDF attachment
+  }
+  
   return {
     id: parseInt(raw.id) || 0,
     title: raw.title_en || raw.title || '',
@@ -273,14 +273,15 @@ export function transformGuide(raw: any): Guide {
     author: raw.author,
     status: raw.status,
     related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
-    content_ref: raw.content_ref,
+    content_ref: contentRef,
+    pdf_attachment: pdfAttachment,
     read_time: raw.read_time,
     image: raw.image,
     topics: raw.topics ? raw.topics.split('|') : [],
     // LocalizedString fields
     localizedTitle: createLocalizedStringFromCSV(raw, 'title'),
     localizedSummary: createLocalizedStringFromCSV(raw, 'summary'),
-    content: createLocalizedString(raw.content_ref || ''),
+    content: createLocalizedString(contentRef || ''),
   };
 }
 
@@ -534,32 +535,32 @@ export class ContentLoader {
   private parseMetrics: Map<string, { parseTime: number; rowCount: number }> = new Map();
   private searchInstances: Map<string, ReturnType<typeof createDebouncedSearch<BaseContent>>> = new Map();
   
-  // O(1) Lookup Maps for fast access
-  private charactersByKey: Map<string, Character> = new Map();
-  private charactersByIndex: Map<number, Character> = new Map();
-  private swimsuitsByKey: Map<string, Swimsuit> = new Map();
-  private swimsuitsByIndex: Map<number, Swimsuit> = new Map();
-  private eventsByKey: Map<string, Event> = new Map();
-  private eventsByIndex: Map<number, Event> = new Map();
-  private guidesByKey: Map<string, Guide> = new Map();
-  private guidesByIndex: Map<number, Guide> = new Map();
-  private itemsByKey: Map<string, Item> = new Map();
-  private itemsByIndex: Map<number, Item> = new Map();
-  private episodesByKey: Map<string, Episode> = new Map();
-  private episodesByIndex: Map<number, Episode> = new Map();
-  private gachasByKey: Map<string, Gacha> = new Map();
-  private gachasByIndex: Map<number, Gacha> = new Map();
+  // O(1) Lookup Maps for fast access - consolidated into typed maps
+  private lookupByKey = new Map<string, Map<string, any>>();
+  private lookupByIndex = new Map<string, Map<number, any>>();
   private festivalsByKey: Map<string, Festival> = new Map();
-  private categoriesByKey: Map<string, Category> = new Map();
-  private tagsByKey: Map<string, Tag> = new Map();
-  private toolsByKey: Map<string, Tool> = new Map();
-  private toolsByIndex: Map<number, Tool> = new Map();
-  private accessoriesByKey: Map<string, Accessory> = new Map();
-  private accessoriesByIndex: Map<number, Accessory> = new Map();
-  private missionsByKey: Map<string, Mission> = new Map();
-  private missionsByIndex: Map<number, Mission> = new Map();
-  private quizzesByKey: Map<string, Quiz> = new Map();
-  private quizzesByIndex: Map<number, Quiz> = new Map();
+
+  /** Build lookup maps for a content type */
+  private buildLookupMaps<T extends { unique_key: string; id: number }>(type: string, items: T[]): void {
+    const byKey = new Map<string, T>();
+    const byIndex = new Map<number, T>();
+    for (const item of items) {
+      byKey.set(item.unique_key, item);
+      byIndex.set(item.id, item);
+    }
+    this.lookupByKey.set(type, byKey);
+    this.lookupByIndex.set(type, byIndex);
+  }
+
+  /** Get item by unique_key from lookup map */
+  private getByKey<T>(type: string, key: string): T | undefined {
+    return this.lookupByKey.get(type)?.get(key);
+  }
+
+  /** Get item by id from lookup map */
+  private getByIndex<T>(type: string, id: number): T | undefined {
+    return this.lookupByIndex.get(type)?.get(id);
+  }
 
   private constructor(config: ContentLoaderConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -806,200 +807,80 @@ export class ContentLoader {
     ]);
   }
 
+  /** Generic loader with automatic lookup map building */
+  private async loadWithMaps<T extends { unique_key: string; id: number }>(
+    type: string,
+    csv: string,
+    transformer: (raw: Record<string, string>) => T
+  ): Promise<T[]> {
+    const data = await this.loadContent(type, csv, transformer);
+    this.buildLookupMaps(type, data);
+    return data;
+  }
+
   async loadCharacters(): Promise<Character[]> {
-    const characters = await this.loadContent('characters', charactersCSV, transformCharacter);
-    
-    // Build O(1) lookup maps
-    this.charactersByKey.clear();
-    this.charactersByIndex.clear();
-    for (const char of characters) {
-      this.charactersByKey.set(char.unique_key, char);
-      this.charactersByIndex.set(char.id, char);
-    }
-    
-    return characters;
+    return this.loadWithMaps('characters', charactersCSV, transformCharacter);
   }
 
   async loadGuides(): Promise<Guide[]> {
-    const guides = await this.loadContent('guides', guidesCSV, transformGuide);
-    
-    // Build O(1) lookup maps
-    this.guidesByKey.clear();
-    this.guidesByIndex.clear();
-    for (const guide of guides) {
-      this.guidesByKey.set(guide.unique_key, guide);
-      this.guidesByIndex.set(guide.id, guide);
-    }
-    
-    return guides;
+    return this.loadWithMaps('guides', guidesCSV, transformGuide);
   }
 
   async loadEvents(): Promise<Event[]> {
-    const events = await this.loadContent('events', eventsCSV, transformEvent);
-    
-    // Build O(1) lookup maps
-    this.eventsByKey.clear();
-    this.eventsByIndex.clear();
-    for (const event of events) {
-      this.eventsByKey.set(event.unique_key, event);
-      this.eventsByIndex.set(event.id, event);
-    }
-    
-    // Also cache festivals (events with type 'Main')
+    const events = await this.loadWithMaps('events', eventsCSV, transformEvent);
+    // Cache festivals (events with type 'Main')
     if (!this.getCached<Festival>('festivals')) {
       const festivals = events.filter((e: Event) => e.type === 'Main') as FestivalType[];
       this.setCache('festivals', festivals);
-      
-      // Build festival lookup map
       this.festivalsByKey.clear();
-      for (const festival of festivals) {
-        this.festivalsByKey.set(festival.unique_key, festival);
-      }
+      for (const f of festivals) this.festivalsByKey.set(f.unique_key, f);
     }
-    
     return events;
   }
 
   async loadSwimsuits(): Promise<Swimsuit[]> {
-    const swimsuits = await this.loadContent('swimsuits', swimsuitsCSV, transformSwimsuit);
-    
-    // Build O(1) lookup maps
-    this.swimsuitsByKey.clear();
-    this.swimsuitsByIndex.clear();
-    for (const suit of swimsuits) {
-      this.swimsuitsByKey.set(suit.unique_key, suit);
-      this.swimsuitsByIndex.set(suit.id, suit);
-    }
-    
-    return swimsuits;
+    return this.loadWithMaps('swimsuits', swimsuitsCSV, transformSwimsuit);
   }
 
   async loadItems(): Promise<Item[]> {
-    const items = await this.loadContent('items', itemsCSV, transformItem);
-    
-    // Build O(1) lookup maps
-    this.itemsByKey.clear();
-    this.itemsByIndex.clear();
-    for (const item of items) {
-      this.itemsByKey.set(item.unique_key, item);
-      this.itemsByIndex.set(item.id, item);
-    }
-    
-    return items;
+    return this.loadWithMaps('items', itemsCSV, transformItem);
   }
 
   async loadEpisodes(): Promise<Episode[]> {
-    const episodes = await this.loadContent('episodes', episodesCSV, transformEpisode);
-    
-    // Build O(1) lookup maps
-    this.episodesByKey.clear();
-    this.episodesByIndex.clear();
-    for (const episode of episodes) {
-      this.episodesByKey.set(episode.unique_key, episode);
-      this.episodesByIndex.set(episode.id, episode);
-    }
-    
-    return episodes;
+    return this.loadWithMaps('episodes', episodesCSV, transformEpisode);
   }
 
   async loadGachas(): Promise<Gacha[]> {
-    const gachas = await this.loadContent('gachas', gachasCSV, transformGacha);
-    
-    // Build O(1) lookup maps
-    this.gachasByKey.clear();
-    this.gachasByIndex.clear();
-    for (const gacha of gachas) {
-      this.gachasByKey.set(gacha.unique_key, gacha);
-      this.gachasByIndex.set(gacha.id, gacha);
-    }
-    
-    return gachas;
+    return this.loadWithMaps('gachas', gachasCSV, transformGacha);
   }
 
   async loadCategories(): Promise<Category[]> {
-    const categories = await this.loadContent('categories', categoriesCSV, transformCategory);
-    
-    // Build O(1) lookup map
-    this.categoriesByKey.clear();
-    for (const category of categories) {
-      this.categoriesByKey.set(category.unique_key, category);
-    }
-    
-    return categories;
+    return this.loadWithMaps('categories', categoriesCSV, transformCategory);
   }
 
   async loadTags(): Promise<Tag[]> {
-    const tags = await this.loadContent('tags', tagsCSV, transformTag);
-    
-    // Build O(1) lookup map
-    this.tagsByKey.clear();
-    for (const tag of tags) {
-      this.tagsByKey.set(tag.unique_key, tag);
-    }
-    
-    return tags;
+    return this.loadWithMaps('tags', tagsCSV, transformTag);
   }
 
   async loadFestivals(): Promise<Festival[]> {
-    // Ensure events are loaded first (which caches festivals)
     await this.loadEvents();
     return this.getCached<Festival>('festivals') || [];
   }
 
   async loadTools(): Promise<Tool[]> {
-    const tools = await this.loadContent('tools', toolsCSV, transformTool);
-    
-    // Build O(1) lookup maps
-    this.toolsByKey.clear();
-    this.toolsByIndex.clear();
-    for (const tool of tools) {
-      this.toolsByKey.set(tool.unique_key, tool);
-      this.toolsByIndex.set(tool.id, tool);
-    }
-    
-    return tools;
+    return this.loadWithMaps('tools', toolsCSV, transformTool);
   }
 
   async loadAccessories(): Promise<Accessory[]> {
-    const accessories = await this.loadContent('accessories', accessoriesCSV, transformAccessory);
-    
-    // Build O(1) lookup maps
-    this.accessoriesByKey.clear();
-    this.accessoriesByIndex.clear();
-    for (const accessory of accessories) {
-      this.accessoriesByKey.set(accessory.unique_key, accessory);
-      this.accessoriesByIndex.set(accessory.id, accessory);
-    }
-    
-    return accessories;
+    return this.loadWithMaps('accessories', accessoriesCSV, transformAccessory);
   }
 
   async loadMissions(): Promise<Mission[]> {
-    const missions = await this.loadContent('missions', missionsCSV, transformMission);
-    
-    // Build O(1) lookup maps
-    this.missionsByKey.clear();
-    this.missionsByIndex.clear();
-    for (const mission of missions) {
-      this.missionsByKey.set(mission.unique_key, mission);
-      this.missionsByIndex.set(mission.id, mission);
-    }
-    
-    return missions;
+    return this.loadWithMaps('missions', missionsCSV, transformMission);
   }
 
   async loadQuizzes(): Promise<Quiz[]> {
-    const quizzes = await this.loadContent('quizzes', quizzesCSV, transformQuiz);
-    
-    // Build O(1) lookup maps
-    this.quizzesByKey.clear();
-    this.quizzesByIndex.clear();
-    for (const quiz of quizzes) {
-      this.quizzesByKey.set(quiz.unique_key, quiz);
-      this.quizzesByIndex.set(quiz.id, quiz);
-    }
-    
-    return quizzes;
+    return this.loadWithMaps('quizzes', quizzesCSV, transformQuiz);
   }
 
 
@@ -1067,119 +948,38 @@ export class ContentLoader {
   // Find by ID methods - O(1) using lookup maps
   // ============================================================================
 
-  getGuideById(id: number): Guide | undefined {
-    return this.guidesByIndex.get(id);
-  }
-
-  getCharacterById(id: number): Character | undefined {
-    return this.charactersByIndex.get(id);
-  }
-
-  getEventById(id: number): Event | undefined {
-    return this.eventsByIndex.get(id);
-  }
-
-  getSwimsuitById(id: number): Swimsuit | undefined {
-    return this.swimsuitsByIndex.get(id);
-  }
-
-  getItemById(id: number): Item | undefined {
-    return this.itemsByIndex.get(id);
-  }
-
-  getEpisodeById(id: number): Episode | undefined {
-    return this.episodesByIndex.get(id);
-  }
-
-  getCategoryById(id: number): Category | undefined {
-    const categories = this.getCategories();
-    return categories.find(c => c.id === id);
-  }
-
-  getTagById(id: number): Tag | undefined {
-    const tags = this.getTags();
-    return tags.find(t => t.id === id);
-  }
-
-  getGachaById(id: number): Gacha | undefined {
-    return this.gachasByIndex.get(id);
-  }
-
-  getToolById(id: number): Tool | undefined {
-    return this.toolsByIndex.get(id);
-  }
-
-  getAccessoryById(id: number): Accessory | undefined {
-    return this.accessoriesByIndex.get(id);
-  }
-
-  getMissionById(id: number): Mission | undefined {
-    return this.missionsByIndex.get(id);
-  }
-
-  getQuizById(id: number): Quiz | undefined {
-    return this.quizzesByIndex.get(id);
-  }
+  getGuideById(id: number): Guide | undefined { return this.getByIndex('guides', id); }
+  getCharacterById(id: number): Character | undefined { return this.getByIndex('characters', id); }
+  getEventById(id: number): Event | undefined { return this.getByIndex('events', id); }
+  getSwimsuitById(id: number): Swimsuit | undefined { return this.getByIndex('swimsuits', id); }
+  getItemById(id: number): Item | undefined { return this.getByIndex('items', id); }
+  getEpisodeById(id: number): Episode | undefined { return this.getByIndex('episodes', id); }
+  getCategoryById(id: number): Category | undefined { return this.getByIndex('categories', id); }
+  getTagById(id: number): Tag | undefined { return this.getByIndex('tags', id); }
+  getGachaById(id: number): Gacha | undefined { return this.getByIndex('gachas', id); }
+  getToolById(id: number): Tool | undefined { return this.getByIndex('tools', id); }
+  getAccessoryById(id: number): Accessory | undefined { return this.getByIndex('accessories', id); }
+  getMissionById(id: number): Mission | undefined { return this.getByIndex('missions', id); }
+  getQuizById(id: number): Quiz | undefined { return this.getByIndex('quizzes', id); }
 
   // ============================================================================
   // Find by unique_key methods - O(1) using lookup maps
   // ============================================================================
 
-  getGuideByUniqueKey(uniqueKey: string): Guide | undefined {
-    return this.guidesByKey.get(uniqueKey);
-  }
-
-  getCharacterByUniqueKey(uniqueKey: string): Character | undefined {
-    return this.charactersByKey.get(uniqueKey);
-  }
-
-  getEventByUniqueKey(uniqueKey: string): Event | undefined {
-    return this.eventsByKey.get(uniqueKey);
-  }
-
-  getSwimsuitByUniqueKey(uniqueKey: string): Swimsuit | undefined {
-    return this.swimsuitsByKey.get(uniqueKey);
-  }
-
-  getItemByUniqueKey(uniqueKey: string): Item | undefined {
-    return this.itemsByKey.get(uniqueKey);
-  }
-
-  getEpisodeByUniqueKey(uniqueKey: string): Episode | undefined {
-    return this.episodesByKey.get(uniqueKey);
-  }
-
-  getFestivalByUniqueKey(uniqueKey: string): Festival | undefined {
-    return this.festivalsByKey.get(uniqueKey);
-  }
-
-  getGachaByUniqueKey(uniqueKey: string): Gacha | undefined {
-    return this.gachasByKey.get(uniqueKey);
-  }
-
-  getCategoryByUniqueKey(uniqueKey: string): Category | undefined {
-    return this.categoriesByKey.get(uniqueKey);
-  }
-
-  getTagByUniqueKey(uniqueKey: string): Tag | undefined {
-    return this.tagsByKey.get(uniqueKey);
-  }
-
-  getToolByUniqueKey(uniqueKey: string): Tool | undefined {
-    return this.toolsByKey.get(uniqueKey);
-  }
-
-  getAccessoryByKey(uniqueKey: string): Accessory | undefined {
-    return this.accessoriesByKey.get(uniqueKey);
-  }
-
-  getMissionByKey(uniqueKey: string): Mission | undefined {
-    return this.missionsByKey.get(uniqueKey);
-  }
-
-  getQuizByUniqueKey(uniqueKey: string): Quiz | undefined {
-    return this.quizzesByKey.get(uniqueKey);
-  }
+  getGuideByUniqueKey(key: string): Guide | undefined { return this.getByKey('guides', key); }
+  getCharacterByUniqueKey(key: string): Character | undefined { return this.getByKey('characters', key); }
+  getEventByUniqueKey(key: string): Event | undefined { return this.getByKey('events', key); }
+  getSwimsuitByUniqueKey(key: string): Swimsuit | undefined { return this.getByKey('swimsuits', key); }
+  getItemByUniqueKey(key: string): Item | undefined { return this.getByKey('items', key); }
+  getEpisodeByUniqueKey(key: string): Episode | undefined { return this.getByKey('episodes', key); }
+  getFestivalByUniqueKey(key: string): Festival | undefined { return this.festivalsByKey.get(key); }
+  getGachaByUniqueKey(key: string): Gacha | undefined { return this.getByKey('gachas', key); }
+  getCategoryByUniqueKey(key: string): Category | undefined { return this.getByKey('categories', key); }
+  getTagByUniqueKey(key: string): Tag | undefined { return this.getByKey('tags', key); }
+  getToolByUniqueKey(key: string): Tool | undefined { return this.getByKey('tools', key); }
+  getAccessoryByKey(key: string): Accessory | undefined { return this.getByKey('accessories', key); }
+  getMissionByKey(key: string): Mission | undefined { return this.getByKey('missions', key); }
+  getQuizByUniqueKey(key: string): Quiz | undefined { return this.getByKey('quizzes', key); }
 
   // ============================================================================
   // Utility methods
@@ -1227,15 +1027,9 @@ export class ContentLoader {
     this.pendingRequests.clear();
     this.parseMetrics.clear();
     this.searchInstances.clear();
-    
-    // Clear all lookup maps
-    [this.charactersByKey, this.charactersByIndex, this.swimsuitsByKey, this.swimsuitsByIndex,
-     this.eventsByKey, this.eventsByIndex, this.guidesByKey, this.guidesByIndex,
-     this.itemsByKey, this.itemsByIndex, this.episodesByKey, this.episodesByIndex,
-     this.gachasByKey, this.gachasByIndex, this.festivalsByKey, this.categoriesByKey,
-     this.tagsByKey, this.toolsByKey, this.toolsByIndex, this.accessoriesByKey,
-     this.accessoriesByIndex, this.missionsByKey, this.missionsByIndex,
-     this.quizzesByKey, this.quizzesByIndex].forEach(m => m.clear());
+    this.lookupByKey.clear();
+    this.lookupByIndex.clear();
+    this.festivalsByKey.clear();
     
     // Clear IndexedDB if enabled
     this.idbCache?.clear().catch(() => {});

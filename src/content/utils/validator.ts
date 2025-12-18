@@ -231,563 +231,211 @@ export class ContentValidator {
     }
   }
 
-  /**
-   * Validate Character fields
-   */
-  private validateCharacter(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate stats JSON
-    this.validateStatsJSON(row, rowNum, errors);
-
-    // Validate localized name fields
+  /** Validate localized name fields exist */
+  private validateLocalizedName(row: Record<string, any>, rowNum: number, errors: ValidationError[], label: string): void {
     if (!row.name_en && !row.name_jp) {
-      errors.push({
-        row: rowNum,
-        field: 'name_en/name_jp',
-        message: 'Phải có ít nhất name_en hoặc name_jp',
-        expected: 'Tên nhân vật bằng tiếng Anh hoặc tiếng Nhật',
-      });
-    }
-
-    // Validate birthday format
-    if (row.birthday_en && !this.isValidBirthdayFormat(row.birthday_en)) {
-      warnings.push(
-        `Row ${rowNum}: birthday_en '${row.birthday_en}' nên theo format 'Month Day' (vd: July 7)`
-      );
-    }
-
-    // Validate height format
-    if (row.height_en && !/^\d+cm$/i.test(row.height_en)) {
-      warnings.push(
-        `Row ${rowNum}: height_en '${row.height_en}' nên theo format '###cm' (vd: 158cm)`
-      );
+      errors.push({ row: rowNum, field: 'name_en/name_jp', message: 'Phải có ít nhất name_en hoặc name_jp', expected: label });
     }
   }
 
-  /**
-   * Validate Swimsuit fields
-   */
-  private validateSwimsuit(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate rarity
-    if (row.rarity && !VALID_RARITIES.includes(row.rarity)) {
-      errors.push({
-        row: rowNum,
-        field: 'rarity',
-        message: `Rarity '${row.rarity}' không hợp lệ`,
-        value: row.rarity,
-        expected: VALID_RARITIES.join(', '),
-      });
-    }
-
-    // Validate character_id
-    if (!row.character_id) {
-      errors.push({
-        row: rowNum,
-        field: 'character_id',
-        message: 'character_id là bắt buộc cho swimsuit',
-        expected: 'unique_key của character (vd: misaki)',
-      });
-    }
-
-    // Validate stats JSON
+  /** Validate Character fields */
+  private validateCharacter(row: Record<string, any>, rowNum: number, errors: ValidationError[], warnings: string[]): void {
     this.validateStatsJSON(row, rowNum, errors);
-
-    // Validate numeric stat fields
-    const numericFields = [
-      'max_level', 'base_pow', 'max_pow', 'base_tec', 'max_tec',
-      'base_stm', 'max_stm', 'base_apl', 'max_apl',
-    ];
-    numericFields.forEach((field) => {
-      if (row[field] !== undefined && row[field] !== '') {
-        const num = Number(row[field]);
-        if (isNaN(num) || num < 0) {
-          errors.push({
-            row: rowNum,
-            field,
-            message: `${field} phải là số không âm, nhận được: '${row[field]}'`,
-            value: row[field],
-            expected: 'Số không âm (0, 1, 2, ...)',
-          });
-        }
-      }
-    });
-
-    // Validate growth fields (decimal)
-    const growthFields = ['pow_growth', 'tec_growth', 'stm_growth', 'apl_growth'];
-    growthFields.forEach((field) => {
-      if (row[field] !== undefined && row[field] !== '') {
-        const num = Number(row[field]);
-        if (isNaN(num)) {
-          errors.push({
-            row: rowNum,
-            field,
-            message: `${field} phải là số thập phân, nhận được: '${row[field]}'`,
-            value: row[field],
-            expected: 'Số thập phân (vd: 3.3, 2.8)',
-          });
-        }
-      }
-    });
+    this.validateLocalizedName(row, rowNum, errors, 'Tên nhân vật bằng tiếng Anh hoặc tiếng Nhật');
+    if (row.birthday_en && !this.isValidBirthdayFormat(row.birthday_en)) {
+      warnings.push(`Row ${rowNum}: birthday_en '${row.birthday_en}' nên theo format 'Month Day' (vd: July 7)`);
+    }
+    if (row.height_en && !/^\d+cm$/i.test(row.height_en)) {
+      warnings.push(`Row ${rowNum}: height_en '${row.height_en}' nên theo format '###cm' (vd: 158cm)`);
+    }
   }
 
-  /**
-   * Validate Event fields
-   */
-  private validateEvent(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate event type
-    if (row.type && !VALID_EVENT_TYPES.includes(row.type)) {
-      errors.push({
-        row: rowNum,
-        field: 'type',
-        message: `Event type '${row.type}' không hợp lệ`,
-        value: row.type,
-        expected: VALID_EVENT_TYPES.join(', '),
-      });
+  /** Validate enum field against valid values */
+  private validateEnum(row: Record<string, any>, field: string, validValues: readonly string[], rowNum: number, errors: ValidationError[]): void {
+    if (row[field] && !validValues.includes(row[field])) {
+      errors.push({ row: rowNum, field, message: `${field} '${row[field]}' không hợp lệ`, value: row[field], expected: validValues.join(', ') });
     }
+  }
 
-    // Validate event status
-    if (row.event_status && !VALID_EVENT_STATUSES.includes(row.event_status)) {
-      errors.push({
-        row: rowNum,
-        field: 'event_status',
-        message: `Event status '${row.event_status}' không hợp lệ`,
-        value: row.event_status,
-        expected: VALID_EVENT_STATUSES.join(', '),
-      });
+  /** Validate numeric fields (non-negative integers) */
+  private validateNumericFields(row: Record<string, any>, fields: string[], rowNum: number, errors: ValidationError[], allowDecimal = false): void {
+    for (const field of fields) {
+      if (row[field] !== undefined && row[field] !== '') {
+        const num = Number(row[field]);
+        if (isNaN(num) || (!allowDecimal && num < 0)) {
+          errors.push({
+            row: rowNum, field,
+            message: `${field} phải là số ${allowDecimal ? 'thập phân' : 'không âm'}, nhận được: '${row[field]}'`,
+            value: row[field],
+            expected: allowDecimal ? 'Số thập phân (vd: 3.3, 2.8)' : 'Số không âm (0, 1, 2, ...)',
+          });
+        }
+      }
     }
+  }
 
-    // Validate date fields
+  /** Validate Swimsuit fields */
+  private validateSwimsuit(row: Record<string, any>, rowNum: number, errors: ValidationError[], warnings: string[]): void {
+    this.validateEnum(row, 'rarity', VALID_RARITIES, rowNum, errors);
+    if (!row.character_id) {
+      errors.push({ row: rowNum, field: 'character_id', message: 'character_id là bắt buộc cho swimsuit', expected: 'unique_key của character (vd: misaki)' });
+    }
+    this.validateStatsJSON(row, rowNum, errors);
+    this.validateNumericFields(row, ['max_level', 'base_pow', 'max_pow', 'base_tec', 'max_tec', 'base_stm', 'max_stm', 'base_apl', 'max_apl'], rowNum, errors);
+    this.validateNumericFields(row, ['pow_growth', 'tec_growth', 'stm_growth', 'apl_growth'], rowNum, errors, true);
+  }
+
+  /** Validate date range (end > start) */
+  private validateDateRange(row: Record<string, any>, rowNum: number, errors: ValidationError[]): void {
     this.validateDateTimeField(row, 'start_date', rowNum, errors);
     this.validateDateTimeField(row, 'end_date', rowNum, errors);
-
-    // Validate end_date > start_date
     if (row.start_date && row.end_date) {
-      const start = new Date(row.start_date);
-      const end = new Date(row.end_date);
+      const start = new Date(row.start_date), end = new Date(row.end_date);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end <= start) {
-        errors.push({
-          row: rowNum,
-          field: 'end_date',
-          message: 'end_date phải sau start_date',
-          value: row.end_date,
-          expected: `Ngày sau ${row.start_date}`,
-        });
+        errors.push({ row: rowNum, field: 'end_date', message: 'end_date phải sau start_date', value: row.end_date, expected: `Ngày sau ${row.start_date}` });
       }
     }
+  }
 
-    // Validate array fields
+  /** Validate Event fields */
+  private validateEvent(row: Record<string, any>, rowNum: number, errors: ValidationError[], warnings: string[]): void {
+    this.validateEnum(row, 'type', VALID_EVENT_TYPES, rowNum, errors);
+    this.validateEnum(row, 'event_status', VALID_EVENT_STATUSES, rowNum, errors);
+    this.validateDateRange(row, rowNum, errors);
     this.validateArrayField(row, 'rewards_en', rowNum, warnings);
     this.validateArrayField(row, 'rewards_jp', rowNum, warnings);
   }
 
-  /**
-   * Validate Gacha fields
-   */
-  private validateGacha(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate gacha status
-    if (row.gacha_status && !VALID_GACHA_STATUSES.includes(row.gacha_status)) {
-      errors.push({
-        row: rowNum,
-        field: 'gacha_status',
-        message: `Gacha status '${row.gacha_status}' không hợp lệ`,
-        value: row.gacha_status,
-        expected: VALID_GACHA_STATUSES.join(', '),
-      });
-    }
-
-    // Validate date fields
-    this.validateDateTimeField(row, 'start_date', rowNum, errors);
-    this.validateDateTimeField(row, 'end_date', rowNum, errors);
-
-    // Validate rates (must be numbers between 0-100)
-    const rateFields = ['rates_ssr', 'rates_sr', 'rates_r'];
-    rateFields.forEach((field) => {
+  /** Validate rate fields (0-100) */
+  private validateRates(row: Record<string, any>, fields: string[], rowNum: number, errors: ValidationError[], warnings: string[]): void {
+    let sum = 0, hasAll = true;
+    for (const field of fields) {
       if (row[field] !== undefined && row[field] !== '') {
         const rate = Number(row[field]);
         if (isNaN(rate) || rate < 0 || rate > 100) {
-          errors.push({
-            row: rowNum,
-            field,
-            message: `${field} phải là số từ 0-100, nhận được: '${row[field]}'`,
-            value: row[field],
-            expected: 'Số từ 0 đến 100 (vd: 3.3, 15.0)',
-          });
-        }
-      }
-    });
-
-    // Validate rates sum approximately 100
-    if (row.rates_ssr && row.rates_sr && row.rates_r) {
-      const sum = Number(row.rates_ssr) + Number(row.rates_sr) + Number(row.rates_r);
-      if (Math.abs(sum - 100) > 0.5) {
-        warnings.push(
-          `Row ${rowNum}: Tổng rates (${sum.toFixed(1)}%) không bằng 100%`
-        );
-      }
+          errors.push({ row: rowNum, field, message: `${field} phải là số từ 0-100, nhận được: '${row[field]}'`, value: row[field], expected: 'Số từ 0 đến 100 (vd: 3.3, 15.0)' });
+        } else { sum += rate; }
+      } else { hasAll = false; }
     }
-
-    // Validate pity_at (positive integer)
-    if (row.pity_at !== undefined && row.pity_at !== '') {
-      const pity = Number(row.pity_at);
-      if (!Number.isInteger(pity) || pity <= 0) {
-        errors.push({
-          row: rowNum,
-          field: 'pity_at',
-          message: `pity_at phải là số nguyên dương, nhận được: '${row.pity_at}'`,
-          value: row.pity_at,
-          expected: 'Số nguyên dương (vd: 100, 200)',
-        });
-      }
+    if (hasAll && Math.abs(sum - 100) > 0.5) {
+      warnings.push(`Row ${rowNum}: Tổng rates (${sum.toFixed(1)}%) không bằng 100%`);
     }
+  }
 
-    // Validate step_up (boolean)
-    if (row.step_up !== undefined && row.step_up !== '') {
-      if (!['true', 'false', true, false].includes(row.step_up)) {
-        errors.push({
-          row: rowNum,
-          field: 'step_up',
-          message: `step_up phải là boolean, nhận được: '${row.step_up}'`,
-          value: row.step_up,
-          expected: 'true hoặc false',
-        });
+  /** Validate positive integer field */
+  private validatePositiveInt(row: Record<string, any>, field: string, rowNum: number, errors: ValidationError[]): void {
+    if (row[field] !== undefined && row[field] !== '') {
+      const num = Number(row[field]);
+      if (!Number.isInteger(num) || num <= 0) {
+        errors.push({ row: rowNum, field, message: `${field} phải là số nguyên dương, nhận được: '${row[field]}'`, value: row[field], expected: 'Số nguyên dương (vd: 100, 200)' });
       }
     }
   }
 
-  /**
-   * Validate Episode fields
-   */
-  private validateEpisode(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate episode type
-    if (row.type && !VALID_EPISODE_TYPES.includes(row.type)) {
-      errors.push({
-        row: rowNum,
-        field: 'type',
-        message: `Episode type '${row.type}' không hợp lệ`,
-        value: row.type,
-        expected: VALID_EPISODE_TYPES.join(', '),
-      });
+  /** Validate boolean field */
+  private validateBoolean(row: Record<string, any>, field: string, rowNum: number, errors: ValidationError[]): void {
+    if (row[field] !== undefined && row[field] !== '' && !['true', 'false', true, false].includes(row[field])) {
+      errors.push({ row: rowNum, field, message: `${field} phải là boolean, nhận được: '${row[field]}'`, value: row[field], expected: 'true hoặc false' });
     }
+  }
 
-    // Validate episode status
-    if (row.episode_status && !VALID_EPISODE_STATUSES.includes(row.episode_status)) {
-      errors.push({
-        row: rowNum,
-        field: 'episode_status',
-        message: `Episode status '${row.episode_status}' không hợp lệ`,
-        value: row.episode_status,
-        expected: VALID_EPISODE_STATUSES.join(', '),
-      });
+  /** Validate Gacha fields */
+  private validateGacha(row: Record<string, any>, rowNum: number, errors: ValidationError[], warnings: string[]): void {
+    this.validateEnum(row, 'gacha_status', VALID_GACHA_STATUSES, rowNum, errors);
+    this.validateDateTimeField(row, 'start_date', rowNum, errors);
+    this.validateDateTimeField(row, 'end_date', rowNum, errors);
+    this.validateRates(row, ['rates_ssr', 'rates_sr', 'rates_r'], rowNum, errors, warnings);
+    this.validatePositiveInt(row, 'pity_at', rowNum, errors);
+    this.validateBoolean(row, 'step_up', rowNum, errors);
+  }
+
+  /** Validate non-negative integer field */
+  private validateNonNegativeInt(row: Record<string, any>, field: string, rowNum: number, errors: ValidationError[]): void {
+    if (row[field] !== undefined && row[field] !== '') {
+      const num = Number(row[field]);
+      if (!Number.isInteger(num) || num < 0) {
+        errors.push({ row: rowNum, field, message: `${field} phải là số nguyên không âm, nhận được: '${row[field]}'`, value: row[field], expected: 'Số nguyên không âm (vd: 0, 1, 2)' });
+      }
     }
+  }
 
-    // Validate release_date if present
-    if (row.release_date) {
-      this.validateDateTimeField(row, 'release_date', rowNum, errors);
+  /** Validate content_ref is .md file */
+  private validateContentRef(row: Record<string, any>, field: string, rowNum: number, warnings: string[]): void {
+    if (row[field] && !row[field].endsWith('.md')) {
+      warnings.push(`Row ${rowNum}: ${field} '${row[field]}' nên là file .md`);
     }
+  }
 
-    // Validate character_ids array
+  /** Validate required array field */
+  private validateRequiredArray(row: Record<string, any>, field: string, rowNum: number, errors: ValidationError[], desc: string): void {
+    if (!row[field] || row[field].trim() === '') {
+      errors.push({ row: rowNum, field, message: `${field} là bắt buộc`, expected: desc });
+    }
+  }
+
+  /** Validate Episode fields */
+  private validateEpisode(row: Record<string, any>, rowNum: number, errors: ValidationError[], warnings: string[]): void {
+    this.validateEnum(row, 'type', VALID_EPISODE_TYPES, rowNum, errors);
+    this.validateEnum(row, 'episode_status', VALID_EPISODE_STATUSES, rowNum, errors);
+    if (row.release_date) this.validateDateTimeField(row, 'release_date', rowNum, errors);
     this.validateArrayField(row, 'character_ids', rowNum, warnings);
   }
 
-  /**
-   * Validate Item fields
-   */
-  private validateItem(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate item type
-    if (row.type && !VALID_ITEM_TYPES.includes(row.type)) {
-      errors.push({
-        row: rowNum,
-        field: 'type',
-        message: `Item type '${row.type}' không hợp lệ`,
-        value: row.type,
-        expected: VALID_ITEM_TYPES.join(', '),
-      });
-    }
+  /** Validate Item fields */
+  private validateItem(row: Record<string, any>, rowNum: number, errors: ValidationError[], _warnings: string[]): void {
+    this.validateEnum(row, 'type', VALID_ITEM_TYPES, rowNum, errors);
   }
 
-  /**
-   * Validate Guide fields
-   */
-  private validateGuide(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate content_ref (should be .md file)
-    if (row.content_ref && !row.content_ref.endsWith('.md')) {
-      warnings.push(
-        `Row ${rowNum}: content_ref '${row.content_ref}' nên là file .md`
-      );
-    }
-
-    // Validate read_time format
+  /** Validate Guide fields */
+  private validateGuide(row: Record<string, any>, rowNum: number, _errors: ValidationError[], warnings: string[]): void {
+    this.validateContentRef(row, 'content_ref', rowNum, warnings);
     if (row.read_time && !/^\d+\s*(min|minutes?|phút)$/i.test(row.read_time)) {
-      warnings.push(
-        `Row ${rowNum}: read_time '${row.read_time}' nên theo format '## min' (vd: 10 min)`
-      );
+      warnings.push(`Row ${rowNum}: read_time '${row.read_time}' nên theo format '## min' (vd: 10 min)`);
     }
-
-    // Validate topics array
     this.validateArrayField(row, 'topics', rowNum, warnings);
   }
 
-  /**
-   * Validate Tool fields
-   */
-  private validateTool(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate content_ref
-    if (row.content_ref && !row.content_ref.endsWith('.md')) {
-      warnings.push(
-        `Row ${rowNum}: content_ref '${row.content_ref}' nên là file .md`
-      );
-    }
-
-    // Validate version format if present
+  /** Validate Tool fields */
+  private validateTool(row: Record<string, any>, rowNum: number, _errors: ValidationError[], warnings: string[]): void {
+    this.validateContentRef(row, 'content_ref', rowNum, warnings);
     if (row.version && !/^\d+(\.\d+)*$/.test(row.version)) {
-      warnings.push(
-        `Row ${rowNum}: version '${row.version}' nên theo format semver (vd: 1.0.0)`
-      );
+      warnings.push(`Row ${rowNum}: version '${row.version}' nên theo format semver (vd: 1.0.0)`);
     }
   }
 
-  /**
-   * Validate Accessory fields
-   */
-  private validateAccessory(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate rarity
-    if (row.rarity && !VALID_RARITIES.includes(row.rarity)) {
-      errors.push({
-        row: rowNum,
-        field: 'rarity',
-        message: `Rarity '${row.rarity}' không hợp lệ`,
-        value: row.rarity,
-        expected: VALID_RARITIES.join(', '),
-      });
-    }
-
-    // Validate obtain_method
-    if (row.obtain_method && !VALID_OBTAIN_METHODS.includes(row.obtain_method)) {
-      errors.push({
-        row: rowNum,
-        field: 'obtain_method',
-        message: `Obtain method '${row.obtain_method}' không hợp lệ`,
-        value: row.obtain_method,
-        expected: VALID_OBTAIN_METHODS.join(', '),
-      });
-    }
-
-    // Validate stats JSON if present
-    if (row.stats) {
-      this.validateStatsJSON(row, rowNum, errors, false); // APL optional for accessories
-    }
-
-    // Validate character_ids array
+  /** Validate Accessory fields */
+  private validateAccessory(row: Record<string, any>, rowNum: number, errors: ValidationError[], warnings: string[]): void {
+    this.validateEnum(row, 'rarity', VALID_RARITIES, rowNum, errors);
+    this.validateEnum(row, 'obtain_method', VALID_OBTAIN_METHODS, rowNum, errors);
+    if (row.stats) this.validateStatsJSON(row, rowNum, errors, false);
     this.validateArrayField(row, 'character_ids', rowNum, warnings);
   }
 
-  /**
-   * Validate Mission fields
-   */
-  private validateMission(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate mission type
-    if (row.type && !VALID_MISSION_TYPES.includes(row.type)) {
-      errors.push({
-        row: rowNum,
-        field: 'type',
-        message: `Mission type '${row.type}' không hợp lệ`,
-        value: row.type,
-        expected: VALID_MISSION_TYPES.join(', '),
-      });
-    }
-
-    // Validate objectives array (required)
-    if (!row.objectives || row.objectives.trim() === '') {
-      errors.push({
-        row: rowNum,
-        field: 'objectives',
-        message: 'objectives là bắt buộc cho mission',
-        expected: 'Danh sách mục tiêu phân cách bằng | (vd: Win 5 matches|Collect 100 tokens)',
-      });
-    }
-
-    // Validate rewards array (required)
-    if (!row.rewards || row.rewards.trim() === '') {
-      errors.push({
-        row: rowNum,
-        field: 'rewards',
-        message: 'rewards là bắt buộc cho mission',
-        expected: 'Danh sách phần thưởng phân cách bằng | (vd: 1000 V-Stones|SSR Ticket)',
-      });
-    }
+  /** Validate Mission fields */
+  private validateMission(row: Record<string, any>, rowNum: number, errors: ValidationError[], _warnings: string[]): void {
+    this.validateEnum(row, 'type', VALID_MISSION_TYPES, rowNum, errors);
+    this.validateRequiredArray(row, 'objectives', rowNum, errors, 'Danh sách mục tiêu phân cách bằng | (vd: Win 5 matches|Collect 100 tokens)');
+    this.validateRequiredArray(row, 'rewards', rowNum, errors, 'Danh sách phần thưởng phân cách bằng | (vd: 1000 V-Stones|SSR Ticket)');
   }
 
-  /**
-   * Validate Quiz fields
-   */
-  private validateQuiz(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate difficulty
-    if (row.difficulty && !VALID_QUIZ_DIFFICULTIES.includes(row.difficulty)) {
-      errors.push({
-        row: rowNum,
-        field: 'difficulty',
-        message: `Difficulty '${row.difficulty}' không hợp lệ`,
-        value: row.difficulty,
-        expected: VALID_QUIZ_DIFFICULTIES.join(', '),
-      });
-    }
-
-    // Validate time_limit (positive integer or 0)
-    if (row.time_limit !== undefined && row.time_limit !== '') {
-      const time = Number(row.time_limit);
-      if (!Number.isInteger(time) || time < 0) {
-        errors.push({
-          row: rowNum,
-          field: 'time_limit',
-          message: `time_limit phải là số nguyên không âm (giây), nhận được: '${row.time_limit}'`,
-          value: row.time_limit,
-          expected: 'Số nguyên không âm (vd: 300, 600)',
-        });
-      }
-    }
-
-    // Validate question_count (positive integer)
-    if (row.question_count !== undefined && row.question_count !== '') {
-      const count = Number(row.question_count);
-      if (!Number.isInteger(count) || count <= 0) {
-        errors.push({
-          row: rowNum,
-          field: 'question_count',
-          message: `question_count phải là số nguyên dương, nhận được: '${row.question_count}'`,
-          value: row.question_count,
-          expected: 'Số nguyên dương (vd: 5, 10)',
-        });
-      }
-    }
-
-    // Validate questions_ref
-    if (row.questions_ref && !row.questions_ref.endsWith('.md')) {
-      warnings.push(
-        `Row ${rowNum}: questions_ref '${row.questions_ref}' nên là file .md`
-      );
-    }
+  /** Validate Quiz fields */
+  private validateQuiz(row: Record<string, any>, rowNum: number, errors: ValidationError[], warnings: string[]): void {
+    this.validateEnum(row, 'difficulty', VALID_QUIZ_DIFFICULTIES, rowNum, errors);
+    this.validateNonNegativeInt(row, 'time_limit', rowNum, errors);
+    this.validatePositiveInt(row, 'question_count', rowNum, errors);
+    this.validateContentRef(row, 'questions_ref', rowNum, warnings);
   }
 
-  /**
-   * Validate Category fields
-   */
-  private validateCategory(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate order (positive integer)
-    if (row.order !== undefined && row.order !== '') {
-      const order = Number(row.order);
-      if (!Number.isInteger(order) || order < 0) {
-        errors.push({
-          row: rowNum,
-          field: 'order',
-          message: `order phải là số nguyên không âm, nhận được: '${row.order}'`,
-          value: row.order,
-          expected: 'Số nguyên không âm (vd: 1, 2, 3)',
-        });
-      }
-    }
-
-    // Validate localized name
-    if (!row.name_en && !row.name_jp) {
-      errors.push({
-        row: rowNum,
-        field: 'name_en/name_jp',
-        message: 'Phải có ít nhất name_en hoặc name_jp',
-        expected: 'Tên danh mục',
-      });
-    }
+  /** Validate Category fields */
+  private validateCategory(row: Record<string, any>, rowNum: number, errors: ValidationError[], _warnings: string[]): void {
+    this.validateNonNegativeInt(row, 'order', rowNum, errors);
+    this.validateLocalizedName(row, rowNum, errors, 'Tên danh mục');
   }
 
-  /**
-   * Validate Tag fields
-   */
-  private validateTag(
-    row: Record<string, any>,
-    rowNum: number,
-    errors: ValidationError[],
-    warnings: string[]
-  ): void {
-    // Validate usage_count (non-negative integer)
-    if (row.usage_count !== undefined && row.usage_count !== '') {
-      const count = Number(row.usage_count);
-      if (!Number.isInteger(count) || count < 0) {
-        errors.push({
-          row: rowNum,
-          field: 'usage_count',
-          message: `usage_count phải là số nguyên không âm, nhận được: '${row.usage_count}'`,
-          value: row.usage_count,
-          expected: 'Số nguyên không âm (vd: 0, 5, 12)',
-        });
-      }
-    }
-
-    // Validate localized name
-    if (!row.name_en && !row.name_jp) {
-      errors.push({
-        row: rowNum,
-        field: 'name_en/name_jp',
-        message: 'Phải có ít nhất name_en hoặc name_jp',
-        expected: 'Tên tag',
-      });
-    }
+  /** Validate Tag fields */
+  private validateTag(row: Record<string, any>, rowNum: number, errors: ValidationError[], _warnings: string[]): void {
+    this.validateNonNegativeInt(row, 'usage_count', rowNum, errors);
+    this.validateLocalizedName(row, rowNum, errors, 'Tên tag');
   }
 
   // ============ Helper Methods ============

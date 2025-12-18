@@ -3,12 +3,14 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import {
   ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, X,
   Maximize2, Minimize2, RotateCw, PanelLeftClose, PanelLeft,
-  Maximize, AlignHorizontalJustifyCenter,
+  Maximize, AlignHorizontalJustifyCenter, Loader2,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/lib/utils';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Bundle worker locally instead of CDN
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export interface PDFViewerProps {
   filePath: string;
@@ -17,19 +19,21 @@ export interface PDFViewerProps {
   isModal?: boolean;
   onClose?: () => void;
   title?: string;
-  /** Callback when PDF loads successfully with page count */
   onLoadSuccess?: (numPages: number) => void;
 }
 
 type FitMode = 'custom' | 'fit-width' | 'fit-page';
 
+// Loading spinner component
+const LoadingSpinner = ({ text = 'Loading...' }: { text?: string }) => (
+  <div className="flex flex-col items-center justify-center gap-3 p-8">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <p className="text-sm text-muted-foreground">{text}</p>
+  </div>
+);
+
 const PDFViewer = ({
-  filePath,
-  className,
-  initialPage = 1,
-  isModal = false,
-  onClose,
-  title,
+  filePath, className, initialPage = 1, isModal = false, onClose, title,
   onLoadSuccess: onLoadSuccessProp,
 }: PDFViewerProps) => {
   const [numPages, setNumPages] = useState(0);
@@ -38,6 +42,7 @@ const PDFViewer = ({
   const [rotation, setRotation] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(isModal);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showToolbar, setShowToolbar] = useState(true);
   const [showThumbnails, setShowThumbnails] = useState(false);
   const [fitMode, setFitMode] = useState<FitMode>('custom');
@@ -52,10 +57,8 @@ const PDFViewer = ({
 
   const normalizedPath = filePath.replace(/\\/g, '/');
 
-  // Keep scale ref in sync
   useEffect(() => { currentScaleRef.current = scale; }, [scale]);
 
-  // Auto-hide toolbar
   const resetToolbarTimeout = useCallback(() => {
     if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current);
     setShowToolbar(true);
@@ -69,7 +72,6 @@ const PDFViewer = ({
     return () => { if (toolbarTimeoutRef.current) clearTimeout(toolbarTimeoutRef.current); };
   }, [resetToolbarTimeout]);
 
-  // Measure container
   useEffect(() => {
     const updateSize = () => {
       if (contentRef.current) {
@@ -82,37 +84,30 @@ const PDFViewer = ({
     return () => window.removeEventListener('resize', updateSize);
   }, [isFullscreen]);
 
-  // Calculate scale for fit modes
   useEffect(() => {
     if (fitMode === 'custom' || !pageDimensions.current.ready) return;
     const { width: pageW, height: pageH } = pageDimensions.current;
     const { width: containerW, height: containerH } = containerSize;
     if (!pageW || !pageH || !containerW || !containerH) return;
-
     const newScale = fitMode === 'fit-width'
       ? containerW / pageW
       : Math.min(containerW / pageW, containerH / pageH);
-    
     setScale(Math.max(0.5, Math.min(3, newScale)));
   }, [fitMode, containerSize]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages: pages }: { numPages: number }) => {
     setNumPages(pages);
     setError(null);
+    setIsLoading(false);
     onLoadSuccessProp?.(pages);
   }, [onLoadSuccessProp]);
 
   const onPageLoadSuccess = useCallback(({ width, height }: { width: number; height: number }) => {
     if (!pageDimensions.current.ready) {
-      pageDimensions.current = {
-        width: width / currentScaleRef.current,
-        height: height / currentScaleRef.current,
-        ready: true,
-      };
+      pageDimensions.current = { width: width / currentScaleRef.current, height: height / currentScaleRef.current, ready: true };
     }
   }, []);
 
-  // Navigation
   const goToPage = useCallback((page: number) => {
     const validPage = Math.max(1, Math.min(page, numPages || 1));
     if (validPage !== pageNumber) {
@@ -128,7 +123,6 @@ const PDFViewer = ({
     else setPageInputValue(String(pageNumber));
   };
 
-  // Zoom & fit
   const zoomIn = () => { setFitMode('custom'); setScale(s => Math.min(s + 0.25, 3)); };
   const zoomOut = () => { setFitMode('custom'); setScale(s => Math.max(s - 0.25, 0.5)); };
   const toggleFit = (mode: FitMode) => setFitMode(f => f === mode ? 'custom' : mode);
@@ -166,14 +160,12 @@ const PDFViewer = ({
       {/* Toolbar */}
       <div
         className={cn(
-          'flex items-center justify-between px-3 py-2 bg-card/90 backdrop-blur-md border-b border-border/50',
-          'transition-all duration-300',
+          'flex items-center justify-between px-3 py-2 bg-card/90 backdrop-blur-md border-b border-border/50 transition-all duration-300',
           showToolbar ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
         )}
         onMouseEnter={() => { isMouseOverToolbar.current = true; setShowToolbar(true); }}
         onMouseLeave={() => { isMouseOverToolbar.current = false; resetToolbarTimeout(); }}
       >
-        {/* Left */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setShowThumbnails(s => !s)} className="h-8 w-8">
             {showThumbnails ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
@@ -181,7 +173,6 @@ const PDFViewer = ({
           {title && <span className="text-sm font-medium truncate max-w-[150px] hidden sm:block">{title}</span>}
         </div>
 
-        {/* Center: Navigation */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={() => goToPage(pageNumber - 1)} disabled={pageNumber <= 1} className="h-8 w-8">
             <ChevronLeft className="h-4 w-4" />
@@ -202,12 +193,10 @@ const PDFViewer = ({
           </Button>
         </div>
 
-        {/* Right: Zoom & Actions */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={zoomOut} disabled={scale <= 0.5} className="h-8 w-8"><ZoomOut className="h-4 w-4" /></Button>
           <span className="text-xs text-muted-foreground min-w-[40px] text-center">{Math.round(scale * 100)}%</span>
           <Button variant="ghost" size="icon" onClick={zoomIn} disabled={scale >= 3} className="h-8 w-8"><ZoomIn className="h-4 w-4" /></Button>
-          
           <div className="w-px h-5 bg-border/50 mx-1 hidden sm:block" />
           <Button variant={fitMode === 'fit-width' ? 'secondary' : 'ghost'} size="icon" onClick={() => toggleFit('fit-width')} className="h-8 w-8 hidden sm:flex" title="Fit to width">
             <AlignHorizontalJustifyCenter className="h-4 w-4" />
@@ -215,7 +204,6 @@ const PDFViewer = ({
           <Button variant={fitMode === 'fit-page' ? 'secondary' : 'ghost'} size="icon" onClick={() => toggleFit('fit-page')} className="h-8 w-8 hidden sm:flex" title="Fit to page">
             <Maximize className="h-4 w-4" />
           </Button>
-          
           <div className="w-px h-5 bg-border/50 mx-1 hidden sm:block" />
           <Button variant="ghost" size="icon" onClick={() => setRotation(r => (r + 90) % 360)} className="h-8 w-8"><RotateCw className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={handleDownload} className="h-8 w-8"><Download className="h-4 w-4" /></Button>
@@ -232,8 +220,7 @@ const PDFViewer = ({
       <div className="flex-1 relative overflow-hidden">
         {/* Thumbnails Sidebar */}
         <div className={cn(
-          'absolute left-0 top-0 bottom-0 z-10 bg-card/95 backdrop-blur-sm border-r border-border/50',
-          'overflow-y-auto transition-all duration-300',
+          'absolute left-0 top-0 bottom-0 z-10 bg-card/95 backdrop-blur-sm border-r border-border/50 overflow-y-auto transition-all duration-300',
           showThumbnails ? 'w-36 sm:w-44 opacity-100' : 'w-0 opacity-0 -translate-x-full'
         )}>
           {showThumbnails && numPages > 0 && (
@@ -273,19 +260,23 @@ const PDFViewer = ({
             <Document
               file={normalizedPath}
               onLoadSuccess={onDocumentLoadSuccess}
-              onLoadError={(err: Error) => setError(err.message || 'Failed to load PDF')}
-              loading={<div className="flex items-center justify-center h-64"><div className="animate-pulse text-muted-foreground">Loading PDF...</div></div>}
+              onLoadError={(err: Error) => { setError(err.message || 'Failed to load PDF'); setIsLoading(false); }}
+              loading={<LoadingSpinner text="Loading PDF document..." />}
             >
-              <Page
-                pageNumber={pageNumber}
-                scale={scale}
-                rotate={rotation}
-                onLoadSuccess={onPageLoadSuccess}
-                loading={<div className="flex items-center justify-center h-64 w-full"><div className="animate-pulse text-muted-foreground text-sm">Loading page...</div></div>}
-                className="shadow-lg rounded-lg overflow-hidden transition-transform duration-200"
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-              />
+              {isLoading ? (
+                <LoadingSpinner text="Preparing document..." />
+              ) : (
+                <Page
+                  pageNumber={pageNumber}
+                  scale={scale}
+                  rotate={rotation}
+                  onLoadSuccess={onPageLoadSuccess}
+                  loading={<LoadingSpinner text={`Loading page ${pageNumber}...`} />}
+                  className="shadow-lg rounded-lg overflow-hidden transition-transform duration-200"
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              )}
             </Document>
           )}
         </div>

@@ -539,95 +539,58 @@ export class SearchService {
     };
   }
 
-  /**
-   * Search characters by name
-   */
+  /** Generic search helper */
+  private searchContent<T>(
+    items: T[],
+    query: string,
+    maxResults: number,
+    language: LanguageCode,
+    matcher: (item: T, q: string, lang: LanguageCode) => boolean,
+    transformer: (item: T, lang: LanguageCode) => SearchResult
+  ): SearchResult[] {
+    return items.filter(item => matcher(item, query, language)).slice(0, maxResults).map(item => transformer(item, language));
+  }
+
   private searchCharacters(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
-    const characters = contentLoader.getCharacters();
-    const matches = characters.filter((char) =>
-      matchesLocalizedQuery(char.name, query, language) ||
-      matchesQuery(char.title, query)
-    );
-
-    return matches.slice(0, maxResults).map((char) => this.transformCharacter(char, language));
+    return this.searchContent(contentLoader.getCharacters(), query, maxResults, language,
+      (c, q, l) => matchesLocalizedQuery(c.name, q, l) || matchesQuery(c.title, q),
+      (c, l) => this.transformCharacter(c, l));
   }
 
-  /**
-   * Search swimsuits by name
-   */
   private searchSwimsuits(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
-    const swimsuits = contentLoader.getSwimsuits();
-    const matches = swimsuits.filter((suit) =>
-      matchesLocalizedQuery(suit.name, query, language) ||
-      matchesQuery(suit.title, query) ||
-      matchesQuery(suit.character, query)
-    );
-
-    return matches.slice(0, maxResults).map((suit) => this.transformSwimsuit(suit, language));
+    return this.searchContent(contentLoader.getSwimsuits(), query, maxResults, language,
+      (s, q, l) => matchesLocalizedQuery(s.name, q, l) || matchesQuery(s.title, q) || matchesQuery(s.character, q),
+      (s, l) => this.transformSwimsuit(s, l));
   }
 
-  /**
-   * Search events by name
-   */
   private searchEvents(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
-    const events = contentLoader.getEvents();
-    const matches = events.filter((event) =>
-      matchesLocalizedQuery(event.name, query, language) ||
-      matchesQuery(event.title, query)
-    );
-
-    return matches.slice(0, maxResults).map((event) => this.transformEvent(event, language));
+    return this.searchContent(contentLoader.getEvents(), query, maxResults, language,
+      (e, q, l) => matchesLocalizedQuery(e.name, q, l) || matchesQuery(e.title, q),
+      (e, l) => this.transformEvent(e, l));
   }
 
-  /**
-   * Search gachas by name
-   */
   private searchGachas(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
-    const gachas = contentLoader.getGachas();
-    const matches = gachas.filter((gacha) =>
-      matchesLocalizedQuery(gacha.name, query, language)
-    );
-
-    return matches.slice(0, maxResults).map((gacha) => this.transformGacha(gacha, language));
+    return this.searchContent(contentLoader.getGachas(), query, maxResults, language,
+      (g, q, l) => matchesLocalizedQuery(g.name, q, l),
+      (g, l) => this.transformGacha(g, l));
   }
 
-  /**
-   * Search guides by title
-   */
   private searchGuides(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
-    const guides = contentLoader.getGuides();
-    const matches = guides.filter((guide) =>
-      matchesLocalizedQuery(guide.localizedTitle, query, language) ||
-      matchesQuery(guide.title, query)
-    );
-
-    return matches.slice(0, maxResults).map((guide) => this.transformGuide(guide, language));
+    return this.searchContent(contentLoader.getGuides(), query, maxResults, language,
+      (g, q, l) => matchesLocalizedQuery(g.localizedTitle, q, l) || matchesQuery(g.title, q),
+      (g, l) => this.transformGuide(g, l));
   }
 
-  /**
-   * Search items by name
-   */
   private searchItems(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
-    const items = contentLoader.getItems();
-    const matches = items.filter((item) =>
-      matchesLocalizedQuery(item.name, query, language) ||
-      matchesQuery(item.title, query)
-    );
-
-    return matches.slice(0, maxResults).map((item) => this.transformItem(item, language));
+    return this.searchContent(contentLoader.getItems(), query, maxResults, language,
+      (i, q, l) => matchesLocalizedQuery(i.name, q, l) || matchesQuery(i.title, q),
+      (i, l) => this.transformItem(i, l));
   }
 
-  /**
-   * Search episodes by name
-   */
   private searchEpisodes(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
-    const episodes = contentLoader.getEpisodes();
-    const matches = episodes.filter((episode) =>
-      matchesLocalizedQuery(episode.name, query, language) ||
-      matchesQuery(episode.title, query)
-    );
-
-    return matches.slice(0, maxResults).map((episode) => this.transformEpisode(episode, language));
+    return this.searchContent(contentLoader.getEpisodes(), query, maxResults, language,
+      (e, q, l) => matchesLocalizedQuery(e.name, q, l) || matchesQuery(e.title, q),
+      (e, l) => this.transformEpisode(e, l));
   }
 
   /**
@@ -752,90 +715,28 @@ export class SearchService {
     };
   }
 
-  /**
-   * Get badge variant for character/swimsuit rarity
-   */
-  private getRarityBadgeVariant(rarity: 'SSR' | 'SR' | 'R'): 'default' | 'secondary' | 'outline' {
-    switch (rarity) {
-      case 'SSR':
-        return 'default';
-      case 'SR':
-        return 'secondary';
-      case 'R':
-        return 'outline';
-    }
+  /** Badge variant mappings */
+  private static readonly BADGE_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    // Rarity
+    SSR: 'default', SR: 'secondary', R: 'outline', N: 'outline',
+    // Status
+    Active: 'default', Available: 'default',
+    Upcoming: 'secondary', 'Coming Soon': 'secondary',
+    Ended: 'destructive', Limited: 'destructive',
+    // Difficulty
+    Easy: 'default', Medium: 'secondary', Hard: 'destructive',
+  };
+
+  private getBadgeVariant(value: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+    return SearchService.BADGE_VARIANTS[value] || 'outline';
   }
 
-  /**
-   * Get badge variant for item rarity
-   */
-  private getItemRarityBadgeVariant(rarity: 'SSR' | 'SR' | 'R' | 'N'): 'default' | 'secondary' | 'outline' {
-    switch (rarity) {
-      case 'SSR':
-        return 'default';
-      case 'SR':
-        return 'secondary';
-      case 'R':
-      case 'N':
-        return 'outline';
-    }
-  }
-
-  /**
-   * Get badge variant for event status
-   */
-  private getEventStatusBadgeVariant(status: 'Active' | 'Upcoming' | 'Ended'): 'default' | 'secondary' | 'destructive' {
-    switch (status) {
-      case 'Active':
-        return 'default';
-      case 'Upcoming':
-        return 'secondary';
-      case 'Ended':
-        return 'destructive';
-    }
-  }
-
-  /**
-   * Get badge variant for gacha status
-   */
-  private getGachaStatusBadgeVariant(status: 'Active' | 'Coming Soon' | 'Ended'): 'default' | 'secondary' | 'destructive' {
-    switch (status) {
-      case 'Active':
-        return 'default';
-      case 'Coming Soon':
-        return 'secondary';
-      case 'Ended':
-        return 'destructive';
-    }
-  }
-
-  /**
-   * Get badge variant for guide difficulty
-   */
-  private getDifficultyBadgeVariant(difficulty: 'Easy' | 'Medium' | 'Hard'): 'default' | 'secondary' | 'destructive' {
-    switch (difficulty) {
-      case 'Easy':
-        return 'default';
-      case 'Medium':
-        return 'secondary';
-      case 'Hard':
-        return 'destructive';
-    }
-  }
-
-  /**
-   * Get badge variant for episode status
-   */
-  private getEpisodeStatusBadgeVariant(status: 'Available' | 'Coming Soon' | 'Limited'): 'default' | 'secondary' | 'destructive' {
-    switch (status) {
-      case 'Available':
-        return 'default';
-      case 'Coming Soon':
-        return 'secondary';
-      case 'Limited':
-        return 'destructive';
-    }
-  }
+  private getRarityBadgeVariant(rarity: string) { return this.getBadgeVariant(rarity) as 'default' | 'secondary' | 'outline'; }
+  private getItemRarityBadgeVariant(rarity: string) { return this.getBadgeVariant(rarity) as 'default' | 'secondary' | 'outline'; }
+  private getEventStatusBadgeVariant(status: string) { return this.getBadgeVariant(status) as 'default' | 'secondary' | 'destructive'; }
+  private getGachaStatusBadgeVariant(status: string) { return this.getBadgeVariant(status) as 'default' | 'secondary' | 'destructive'; }
+  private getDifficultyBadgeVariant(difficulty: string) { return this.getBadgeVariant(difficulty) as 'default' | 'secondary' | 'destructive'; }
+  private getEpisodeStatusBadgeVariant(status: string) { return this.getBadgeVariant(status) as 'default' | 'secondary' | 'destructive'; }
 }
 
 // Export singleton instance

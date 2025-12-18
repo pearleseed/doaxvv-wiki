@@ -9,11 +9,9 @@
  * - Advanced filters (ranges, dates, booleans) in popover/collapsible
  * - Active filter badges with removal capability
  * - Mobile responsive layout with Sheet
- * 
- * Requirements: 3.1, 3.2, 3.3, 4.1, 4.3, 4.5, 6.1, 6.2, 6.3, 6.4, 7.1, 7.2
  */
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Search, Filter, SortAsc, X, Sliders, Calendar, Star, Clock } from 'lucide-react';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button';
@@ -21,6 +19,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Slider } from '@/shared/components/ui/slider';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Label } from '@/shared/components/ui/label';
+import { DateRangePicker } from '@/shared/components/ui/date-range-picker';
 import {
   Select,
   SelectContent,
@@ -208,79 +207,53 @@ export const UnifiedFilterUI = ({
   );
 
 
-  // ============ Render Advanced Filters ============
-  const renderAdvancedFilters = () => (
-    <div className="space-y-4 pt-4 border-t border-border/50">
-      {/* Date Range Filter */}
-      {config.dateRangeFilter && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            {config.dateRangeFilter.label}
-          </Label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              type="date"
-              value={state.dateRange?.start || ''}
-              onChange={(e) => handlers.setDateRange({
-                start: e.target.value,
-                end: state.dateRange?.end || '',
-              })}
-              className="h-9 bg-card border-border/50 flex-1 min-w-0"
-            />
-            <span className="self-center text-muted-foreground hidden sm:block">-</span>
-            <Input
-              type="date"
-              value={state.dateRange?.end || ''}
-              onChange={(e) => handlers.setDateRange({
-                start: state.dateRange?.start || '',
-                end: e.target.value,
-              })}
-              className="h-9 bg-card border-border/50 flex-1 min-w-0"
-            />
-          </div>
-        </div>
-      )}
+  // ============ Render Advanced Filters (Stats & Boolean only) ============
+  const renderAdvancedFilters = () => {
+    const hasRangeOrBoolean = config.rangeFilters.length > 0 || config.booleanFilters.length > 0;
+    if (!hasRangeOrBoolean) return null;
 
-      {/* Range Filters (Stats) */}
-      {config.rangeFilters.map((filter) => (
-        <div key={filter.key} className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label className="text-sm font-medium">{filter.label}</Label>
-            <span className="text-xs text-muted-foreground">
-              {state.statRanges[filter.key]?.[0] ?? filter.min} - {state.statRanges[filter.key]?.[1] ?? filter.max}
-            </span>
-          </div>
-          <Slider
-            value={state.statRanges[filter.key] || [filter.min, filter.max]}
-            min={filter.min}
-            max={filter.max}
-            step={filter.step || 1}
-            onValueChange={(value) => handlers.setStatRange(filter.key, value as [number, number])}
-            className="py-2"
-          />
-        </div>
-      ))}
-
-      {/* Boolean Filters */}
-      {config.booleanFilters.length > 0 && (
-        <div className="space-y-2">
-          {config.booleanFilters.map((filter) => (
-            <div key={filter.key} className="flex items-center space-x-2">
-              <Checkbox
-                id={filter.key}
-                checked={state.booleanFilters[filter.key] || false}
-                onCheckedChange={(checked) => handlers.setBooleanFilter(filter.key, checked as boolean)}
-              />
-              <Label htmlFor={filter.key} className="text-sm cursor-pointer">
-                {filter.label}
-              </Label>
+    return (
+      <div className="space-y-4 pt-4 border-t border-border/50">
+        {/* Range Filters (Stats) */}
+        {config.rangeFilters.map((filter) => (
+          <div key={filter.key} className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-medium">{filter.label}</Label>
+              <span className="text-xs text-muted-foreground">
+                {state.statRanges[filter.key]?.[0] ?? filter.min} - {state.statRanges[filter.key]?.[1] ?? filter.max}
+              </span>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+            <Slider
+              value={state.statRanges[filter.key] || [filter.min, filter.max]}
+              min={filter.min}
+              max={filter.max}
+              step={filter.step || 1}
+              onValueChange={(value) => handlers.setStatRange(filter.key, value as [number, number])}
+              className="py-2"
+            />
+          </div>
+        ))}
+
+        {/* Boolean Filters */}
+        {config.booleanFilters.length > 0 && (
+          <div className="space-y-2">
+            {config.booleanFilters.map((filter) => (
+              <div key={filter.key} className="flex items-center space-x-2">
+                <Checkbox
+                  id={filter.key}
+                  checked={state.booleanFilters[filter.key] || false}
+                  onCheckedChange={(checked) => handlers.setBooleanFilter(filter.key, checked as boolean)}
+                />
+                <Label htmlFor={filter.key} className="text-sm cursor-pointer">
+                  {filter.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // ============ Render Active Filters ============
   const renderActiveFilters = () => (
@@ -396,6 +369,15 @@ export const UnifiedFilterUI = ({
         <div className="hidden lg:flex items-center gap-2">
           {renderFilterControls()}
           
+          {/* Date Range Picker - Standalone */}
+          {config.dateRangeFilter && (
+            <DateRangePicker
+              value={state.dateRange || undefined}
+              onChange={handlers.setDateRange}
+              onClear={() => handlers.clearFilter('dateRange')}
+            />
+          )}
+          
           {/* Sort */}
           <Select value={state.sort} onValueChange={handlers.setSort}>
             <SelectTrigger className="w-[150px] h-10 bg-card border-border/50">
@@ -409,8 +391,8 @@ export const UnifiedFilterUI = ({
             </SelectContent>
           </Select>
 
-          {/* Advanced Filters Toggle */}
-          {config.hasAdvancedFilters && (
+          {/* Advanced Filters Toggle - Only show if there are range or boolean filters */}
+          {(config.rangeFilters.length > 0 || config.booleanFilters.length > 0) && (
             <Popover open={advancedOpen} onOpenChange={setAdvancedOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="h-10 bg-card border-border/50">
@@ -465,7 +447,25 @@ export const UnifiedFilterUI = ({
               </SheetHeader>
               <div className="mt-6 space-y-6">
                 {renderFilterControls(true)}
-                {config.hasAdvancedFilters && (
+                
+                {/* Date Range Picker - Mobile */}
+                {config.dateRangeFilter && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      {config.dateRangeFilter.label}
+                    </Label>
+                    <DateRangePicker
+                      value={state.dateRange || undefined}
+                      onChange={handlers.setDateRange}
+                      onClear={() => handlers.clearFilter('dateRange')}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+                
+                {/* Advanced Filters - Only range and boolean */}
+                {(config.rangeFilters.length > 0 || config.booleanFilters.length > 0) && (
                   <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" className="w-full justify-between">

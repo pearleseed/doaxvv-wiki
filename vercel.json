@@ -6,6 +6,10 @@
   "installCommand": "bun install",
   "rewrites": [
     {
+      "source": "/guides/:path*.pdf",
+      "destination": "/guides/:path*.pdf"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -53,6 +57,19 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/guides/:path*.pdf",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/pdf"
         }
       ]
     },

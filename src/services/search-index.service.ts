@@ -134,166 +134,61 @@ export class SearchIndexService {
     this.indexBuilt = true;
   }
 
-  private async buildCharacterIndex(): Promise<void> {
-    this.characterIndex = new FlexSearch.Document({
-      document: {
-        id: 'id',
-        index: ['title', 'name_en', 'name_jp'],
-        store: true,
-      },
+  /** Create a FlexSearch document index with standard config */
+  private createIndex(indexFields: string[]): DocumentIndex {
+    return new FlexSearch.Document({
+      document: { id: 'id', index: indexFields, store: true },
       tokenize: 'forward',
       cache: 100,
       resolution: 9,
     });
-
-    const characters = contentLoader.getCharacters();
-    for (const char of characters) {
-      // Flatten nested fields for indexing
-      const doc = {
-        ...char,
-        name_en: char.name?.en || '',
-        name_jp: char.name?.jp || '',
-      };
-      this.characterIndex.add(doc);
-    }
   }
 
-  private async buildSwimsuitIndex(): Promise<void> {
-    this.swimsuitIndex = new FlexSearch.Document({
-      document: {
-        id: 'id',
-        index: ['title', 'name_en', 'name_jp', 'character'],
-        store: true,
-      },
-      tokenize: 'forward',
-      cache: 100,
-      resolution: 9,
-    });
-
-    const swimsuits = contentLoader.getSwimsuits();
-    for (const suit of swimsuits) {
-      const doc = {
-        ...suit,
-        name_en: suit.name?.en || '',
-        name_jp: suit.name?.jp || '',
-      };
-      this.swimsuitIndex.add(doc);
-    }
-  }
-
-  private async buildEventIndex(): Promise<void> {
-    this.eventIndex = new FlexSearch.Document({
-      document: {
-        id: 'id',
-        index: ['title', 'name_en', 'name_jp'],
-        store: true,
-      },
-      tokenize: 'forward',
-      cache: 100,
-      resolution: 9,
-    });
-
-    const events = contentLoader.getEvents();
-    for (const event of events) {
-      const doc = {
-        ...event,
-        name_en: event.name?.en || '',
-        name_jp: event.name?.jp || '',
-      };
-      this.eventIndex.add(doc);
-    }
-  }
-
-  private async buildGachaIndex(): Promise<void> {
-    this.gachaIndex = new FlexSearch.Document({
-      document: {
-        id: 'id',
-        index: ['name_en', 'name_jp'],
-        store: true,
-      },
-      tokenize: 'forward',
-      cache: 100,
-      resolution: 9,
-    });
-
-    const gachas = contentLoader.getGachas();
-    for (const gacha of gachas) {
-      const doc = {
-        ...gacha,
-        name_en: gacha.name?.en || '',
-        name_jp: gacha.name?.jp || '',
-      };
-      this.gachaIndex.add(doc);
-    }
-  }
-
-  private async buildGuideIndex(): Promise<void> {
-    this.guideIndex = new FlexSearch.Document({
-      document: {
-        id: 'id',
-        index: ['title', 'localizedTitle_en', 'localizedTitle_jp', 'summary'],
-        store: true,
-      },
-      tokenize: 'forward',
-      cache: 100,
-      resolution: 9,
-    });
-
-    const guides = contentLoader.getGuides();
-    for (const guide of guides) {
-      const doc = {
-        ...guide,
-        localizedTitle_en: guide.localizedTitle?.en || '',
-        localizedTitle_jp: guide.localizedTitle?.jp || '',
-      };
-      this.guideIndex.add(doc);
-    }
-  }
-
-  private async buildItemIndex(): Promise<void> {
-    this.itemIndex = new FlexSearch.Document({
-      document: {
-        id: 'id',
-        index: ['title', 'name_en', 'name_jp'],
-        store: true,
-      },
-      tokenize: 'forward',
-      cache: 100,
-      resolution: 9,
-    });
-
-    const items = contentLoader.getItems();
+  /** Generic index builder */
+  private buildIndex<T extends { name?: { en?: string; jp?: string } }>(
+    items: T[],
+    indexFields: string[],
+    docTransform?: (item: T) => Record<string, unknown>
+  ): DocumentIndex {
+    const index = this.createIndex(indexFields);
     for (const item of items) {
-      const doc = {
+      const doc = docTransform ? docTransform(item) : {
         ...item,
         name_en: item.name?.en || '',
         name_jp: item.name?.jp || '',
       };
-      this.itemIndex.add(doc);
+      index.add(doc);
     }
+    return index;
+  }
+
+  private async buildCharacterIndex(): Promise<void> {
+    this.characterIndex = this.buildIndex(contentLoader.getCharacters(), ['title', 'name_en', 'name_jp']);
+  }
+
+  private async buildSwimsuitIndex(): Promise<void> {
+    this.swimsuitIndex = this.buildIndex(contentLoader.getSwimsuits(), ['title', 'name_en', 'name_jp', 'character']);
+  }
+
+  private async buildEventIndex(): Promise<void> {
+    this.eventIndex = this.buildIndex(contentLoader.getEvents(), ['title', 'name_en', 'name_jp']);
+  }
+
+  private async buildGachaIndex(): Promise<void> {
+    this.gachaIndex = this.buildIndex(contentLoader.getGachas(), ['name_en', 'name_jp']);
+  }
+
+  private async buildGuideIndex(): Promise<void> {
+    this.guideIndex = this.buildIndex(contentLoader.getGuides(), ['title', 'localizedTitle_en', 'localizedTitle_jp', 'summary'],
+      (g) => ({ ...g, localizedTitle_en: g.localizedTitle?.en || '', localizedTitle_jp: g.localizedTitle?.jp || '' }));
+  }
+
+  private async buildItemIndex(): Promise<void> {
+    this.itemIndex = this.buildIndex(contentLoader.getItems(), ['title', 'name_en', 'name_jp']);
   }
 
   private async buildEpisodeIndex(): Promise<void> {
-    this.episodeIndex = new FlexSearch.Document({
-      document: {
-        id: 'id',
-        index: ['title', 'name_en', 'name_jp'],
-        store: true,
-      },
-      tokenize: 'forward',
-      cache: 100,
-      resolution: 9,
-    });
-
-    const episodes = contentLoader.getEpisodes();
-    for (const episode of episodes) {
-      const doc = {
-        ...episode,
-        name_en: episode.name?.en || '',
-        name_jp: episode.name?.jp || '',
-      };
-      this.episodeIndex.add(doc);
-    }
+    this.episodeIndex = this.buildIndex(contentLoader.getEpisodes(), ['title', 'name_en', 'name_jp']);
   }
 
   /**
@@ -525,54 +420,24 @@ export class SearchIndexService {
     };
   }
 
-  // Badge variant helpers
-  private getRarityBadgeVariant(rarity: string): 'default' | 'secondary' | 'outline' {
-    switch (rarity) {
-      case 'SSR': return 'default';
-      case 'SR': return 'secondary';
-      default: return 'outline';
-    }
+  // Badge variant mappings
+  private static readonly BADGE_MAP: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    SSR: 'default', SR: 'secondary', R: 'outline', N: 'outline',
+    Active: 'default', Available: 'default', Easy: 'default',
+    Upcoming: 'secondary', 'Coming Soon': 'secondary', Medium: 'secondary',
+    Ended: 'destructive', Limited: 'destructive', Hard: 'destructive',
+  };
+
+  private getBadge(value: string, fallback: 'outline' | 'destructive' = 'outline') {
+    return SearchIndexService.BADGE_MAP[value] || fallback;
   }
 
-  private getItemRarityBadgeVariant(rarity: string): 'default' | 'secondary' | 'outline' {
-    switch (rarity) {
-      case 'SSR': return 'default';
-      case 'SR': return 'secondary';
-      default: return 'outline';
-    }
-  }
-
-  private getEventStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' {
-    switch (status) {
-      case 'Active': return 'default';
-      case 'Upcoming': return 'secondary';
-      default: return 'destructive';
-    }
-  }
-
-  private getGachaStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' {
-    switch (status) {
-      case 'Active': return 'default';
-      case 'Coming Soon': return 'secondary';
-      default: return 'destructive';
-    }
-  }
-
-  private getDifficultyBadgeVariant(difficulty: string): 'default' | 'secondary' | 'destructive' {
-    switch (difficulty) {
-      case 'Easy': return 'default';
-      case 'Medium': return 'secondary';
-      default: return 'destructive';
-    }
-  }
-
-  private getEpisodeStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' {
-    switch (status) {
-      case 'Available': return 'default';
-      case 'Coming Soon': return 'secondary';
-      default: return 'destructive';
-    }
-  }
+  private getRarityBadgeVariant(r: string) { return this.getBadge(r) as 'default' | 'secondary' | 'outline'; }
+  private getItemRarityBadgeVariant(r: string) { return this.getBadge(r) as 'default' | 'secondary' | 'outline'; }
+  private getEventStatusBadgeVariant(s: string) { return this.getBadge(s, 'destructive') as 'default' | 'secondary' | 'destructive'; }
+  private getGachaStatusBadgeVariant(s: string) { return this.getBadge(s, 'destructive') as 'default' | 'secondary' | 'destructive'; }
+  private getDifficultyBadgeVariant(d: string) { return this.getBadge(d, 'destructive') as 'default' | 'secondary' | 'destructive'; }
+  private getEpisodeStatusBadgeVariant(s: string) { return this.getBadge(s, 'destructive') as 'default' | 'secondary' | 'destructive'; }
 
   /**
    * Clear indexes and allow rebuild

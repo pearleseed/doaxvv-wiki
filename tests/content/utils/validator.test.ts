@@ -34,24 +34,24 @@ describe('ContentValidator', () => {
 
     it('should detect missing required fields', () => {
       const data = [
-        { id: '1', unique_key: 'test' }, // missing title and status
+        { id: '1', unique_key: 'test' }, // missing status, content_ref, read_time, image (required for guide)
       ];
 
       const result = validator.validateContent(data, 'guide');
       expect(result.isValid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors.some(e => e.field === 'title')).toBe(true);
+      expect(result.errors.some(e => e.field === 'status')).toBe(true);
     });
 
     it('should detect empty required fields', () => {
       const data = [
-        { id: '1', unique_key: '', title: '   ', status: 'published' },
+        { id: '1', unique_key: '', status: 'published', content_ref: '', read_time: '5 min', image: '/test.jpg' },
       ];
 
       const result = validator.validateContent(data, 'guide');
       expect(result.isValid).toBe(false);
       expect(result.errors.some(e => e.field === 'unique_key')).toBe(true);
-      expect(result.errors.some(e => e.field === 'title')).toBe(true);
+      expect(result.errors.some(e => e.field === 'content_ref')).toBe(true);
     });
 
     it('should validate status field', () => {
@@ -91,18 +91,20 @@ describe('ContentValidator', () => {
       expect(result.errors.some(e => e.field === 'difficulty')).toBe(true);
     });
 
-    it('should validate rarity for characters', () => {
+    it('should validate rarity for swimsuits', () => {
       const data = [
         {
           id: '1',
           unique_key: 'test',
-          title: 'Test',
           status: 'published',
+          character_id: 'misaki',
+          image: '/test.jpg',
+          stats: '{"POW": 100, "TEC": 90, "STM": 85}',
           rarity: 'invalid',
         },
       ];
 
-      const result = validator.validateContent(data, 'character');
+      const result = validator.validateContent(data, 'swimsuit');
       expect(result.errors.some(e => e.field === 'rarity')).toBe(true);
     });
 
@@ -151,19 +153,20 @@ describe('ContentValidator', () => {
       expect(result.errors.filter(e => e.field === 'updated_at')).toHaveLength(0);
     });
 
-    it('should warn about invalid slug format', () => {
+    it('should warn about invalid unique_key format', () => {
       const data = [
         {
           id: '1',
-          unique_key: 'test',
-          title: 'Test',
+          unique_key: 'Invalid Key With Spaces',
           status: 'published',
-          slug: 'Invalid Slug With Spaces',
+          content_ref: 'guides/test.md',
+          read_time: '5 min',
+          image: '/test.jpg',
         },
       ];
 
       const result = validator.validateContent(data, 'guide');
-      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.errors.some(e => e.field === 'unique_key')).toBe(true);
     });
 
     it('should validate stats format for characters', () => {
