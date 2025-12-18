@@ -1,5 +1,5 @@
 import { useState, useCallback, ImgHTMLAttributes } from 'react';
-import { ImageOff } from 'lucide-react';
+import { ImageOff, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,10 @@ export interface OptimizedImageProps extends Omit<ImgHTMLAttributes<HTMLImageEle
   aspectRatio?: 'square' | '16/9' | '4/3' | 'auto';
   /** Whether to show skeleton while loading (default: true) */
   showSkeleton?: boolean;
+  /** Allow retry on error (default: true) */
+  allowRetry?: boolean;
+  /** Fallback image URL to try before showing error state */
+  fallbackSrc?: string;
 }
 
 const ASPECT_RATIO_CLASSES: Record<string, string> = {
@@ -31,7 +35,8 @@ const ASPECT_RATIO_CLASSES: Record<string, string> = {
  * - Native lazy loading for deferred off-screen images
  * - Skeleton placeholder while loading
  * - Smooth fade-in transition (300ms) when loaded
- * - Fallback icon display on load failure
+ * - Fallback icon display on load failure with optional retry
+ * - Optional fallback image URL
  * 
  * @example
  * ```tsx
@@ -40,6 +45,7 @@ const ASPECT_RATIO_CLASSES: Record<string, string> = {
  *   alt="Character name"
  *   aspectRatio="square"
  *   className="rounded-lg"
+ *   fallbackSrc="/placeholder.svg"
  * />
  * ```
  */
@@ -49,6 +55,8 @@ export function OptimizedImage({
   fallbackIcon: FallbackIcon = ImageOff,
   aspectRatio = 'auto',
   showSkeleton = true,
+  allowRetry = true,
+  fallbackSrc,
   className,
   onLoad,
   onError,
@@ -56,6 +64,8 @@ export function OptimizedImage({
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const handleLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -68,12 +78,24 @@ export function OptimizedImage({
 
   const handleError = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
+      // Try fallback image first if available and not already using it
+      if (fallbackSrc && !useFallback) {
+        setUseFallback(true);
+        return;
+      }
       setError(true);
       setLoaded(false);
       onError?.(e);
     },
-    [onError]
+    [onError, fallbackSrc, useFallback]
   );
+
+  const handleRetry = useCallback(() => {
+    setError(false);
+    setLoaded(false);
+    setUseFallback(false);
+    setRetryCount(c => c + 1);
+  }, []);
 
   const aspectClass = ASPECT_RATIO_CLASSES[aspectRatio] || '';
   const containerClasses = cn(
@@ -82,18 +104,30 @@ export function OptimizedImage({
     className
   );
 
-  // Error state - show fallback icon
+  const currentSrc = useFallback && fallbackSrc ? fallbackSrc : src;
+
+  // Error state - show fallback icon with optional retry
   if (error) {
     return (
       <div 
         className={cn(
           containerClasses,
-          'flex items-center justify-center bg-muted'
+          'flex flex-col items-center justify-center bg-muted gap-2'
         )}
         role="img"
         aria-label={alt}
       >
-        <FallbackIcon className="h-8 w-8 text-muted-foreground" />
+        <FallbackIcon className="h-8 w-8 text-muted-foreground/50" />
+        {allowRetry && (
+          <button
+            onClick={handleRetry}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Retry loading image"
+          >
+            <RefreshCw className="h-3 w-3" />
+            <span>Retry</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -107,7 +141,8 @@ export function OptimizedImage({
       
       {/* Actual image with lazy loading and fade-in transition */}
       <img
-        src={src}
+        key={`${currentSrc}-${retryCount}`}
+        src={currentSrc}
         alt={alt}
         loading="lazy"
         onLoad={handleLoad}

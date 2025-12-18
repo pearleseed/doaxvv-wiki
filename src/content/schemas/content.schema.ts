@@ -23,6 +23,7 @@ export interface Guide extends BaseContent {
   read_time: string;
   image: string;
   topics: string[];
+  pdf_attachment?: string; // Optional PDF file path to display alongside markdown
   // Localized fields
   localizedTitle: LocalizedString;
   localizedSummary: LocalizedString;

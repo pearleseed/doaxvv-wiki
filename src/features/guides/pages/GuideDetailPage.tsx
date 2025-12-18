@@ -1,11 +1,11 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, RelatedContent, ResponsiveContainer, DatasetImage, MarkdownRenderer, ScrollToTop } from "@/shared/components";
+import { Breadcrumb, RelatedContent, ResponsiveContainer, DatasetImage, MarkdownRenderer, ScrollToTop, PDFViewer } from "@/shared/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import { Clock, User, Calendar, List } from "lucide-react";
+import { Clock, User, Calendar, List, FileText } from "lucide-react";
 import { contentLoader, useGuideContent } from "@/content";
 import type { Guide, Character } from "@/content";
 import { useLanguage } from "@/shared/contexts/language-hooks";
@@ -13,6 +13,21 @@ import { getLocalizedValue } from "@/shared/utils/localization";
 import { useCategories, useTags } from "@/content/hooks";
 
 import { useTranslation } from "@/shared/hooks/useTranslation";
+
+/**
+ * Check if a file path points to a PDF file
+ */
+const isPDFFile = (path: string | undefined): boolean => {
+  if (!path) return false;
+  return path.toLowerCase().endsWith('.pdf');
+};
+
+/**
+ * Normalize file path for cross-platform compatibility (Windows/Unix)
+ */
+const normalizePath = (path: string): string => {
+  return path.replace(/\\/g, '/');
+};
 
 const GuideDetailPage = () => {
   const { unique_key } = useParams<{ unique_key: string }>();
@@ -25,9 +40,27 @@ const GuideDetailPage = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<string>("");
+  const [pdfPageCount, setPdfPageCount] = useState<number>(0);
 
   // Load guide markdown content
   const { rawContent, sections: markdownSections, isLoading: contentLoading } = useGuideContent(guide?.content_ref);
+  
+  // Check if content is a PDF file (main content or attachment)
+  const isPDF = useMemo(() => isPDFFile(guide?.content_ref), [guide?.content_ref]);
+  const hasPdfAttachment = useMemo(() => !!guide?.pdf_attachment, [guide?.pdf_attachment]);
+  
+  // Resolve PDF path helper
+  const resolvePdfPath = (path: string | undefined): string => {
+    if (!path) return '';
+    const normalized = normalizePath(path);
+    if (normalized.startsWith('guides/')) {
+      return `/src/content/data/${normalized}`;
+    }
+    return normalized;
+  };
+  
+  const pdfPath = useMemo(() => isPDF ? resolvePdfPath(guide?.content_ref) : '', [isPDF, guide?.content_ref]);
+  const attachmentPdfPath = useMemo(() => resolvePdfPath(guide?.pdf_attachment), [guide?.pdf_attachment]);
 
   useEffect(() => {
     async function loadContent() {
@@ -142,47 +175,70 @@ const GuideDetailPage = () => {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <nav className="space-y-1">
-                      {markdownSections.length > 0 ? (
-                        // Use markdown sections for TOC
-                        markdownSections
-                          .filter(section => section.level <= 2) // Only show h1 and h2 in TOC
-                          .map((section, index) => {
-                            const sectionId = `section-${section.id}`;
-                            return (
-                              <button
-                                key={index}
-                                onClick={() => scrollToSection(sectionId)}
-                                className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
-                                  section.level === 2 ? 'pl-6' : ''
-                                } ${
-                                  activeSection === sectionId 
-                                    ? "bg-primary/10 text-primary font-medium" 
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                                }`}
-                              >
-                                {section.title}
-                              </button>
-                            );
-                          })
-                      ) : (
-                        // Fallback to topics
-                        guide.topics.map((topic, index) => {
-                          const sectionId = `section-${index}`;
+                      {/* Markdown sections */}
+                      {markdownSections.length > 0 && markdownSections
+                        .filter(section => section.level <= 2)
+                        .map((section, index) => {
+                          const sectionId = `section-${section.id}`;
                           return (
                             <button
-                              key={index}
+                              key={`md-${index}`}
                               onClick={() => scrollToSection(sectionId)}
                               className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
-                                activeSection === sectionId 
-                                  ? "bg-primary/10 text-primary font-medium" 
+                                section.level === 2 ? 'pl-6' : ''
+                              } ${
+                                activeSection === sectionId
+                                  ? "bg-primary/10 text-primary font-medium"
                                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                               }`}
                             >
-                              {getTopicLabel(topic)}
+                              {section.title}
                             </button>
                           );
                         })
+                      }
+
+                      {/* PDF pages - show when PDF is main content or attachment */}
+                      {(isPDF || hasPdfAttachment) && pdfPageCount > 0 && (
+                        <>
+                          {markdownSections.length > 0 && (
+                            <div className="py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              {t('guideDetail.pdfPages') || 'PDF Pages'}
+                            </div>
+                          )}
+                          {Array.from({ length: Math.min(pdfPageCount, 20) }, (_, i) => (
+                            <button
+                              key={`pdf-${i + 1}`}
+                              onClick={() => setActiveSection(`page-${i + 1}`)}
+                              className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
+                                activeSection === `page-${i + 1}`
+                                  ? "bg-primary/10 text-primary font-medium"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                              }`}
+                            >
+                              {t('guideDetail.page') || 'Page'} {i + 1}
+                            </button>
+                          ))}
+                        </>
                       )}
+
+                      {/* Fallback to topics when no markdown and no PDF */}
+                      {markdownSections.length === 0 && !isPDF && !hasPdfAttachment && guide.topics.map((topic, index) => {
+                        const sectionId = `section-${index}`;
+                        return (
+                          <button
+                            key={`topic-${index}`}
+                            onClick={() => scrollToSection(sectionId)}
+                            className={`w-full text-left text-sm py-2 px-3 rounded-lg transition-colors ${
+                              activeSection === sectionId
+                                ? "bg-primary/10 text-primary font-medium"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            {getTopicLabel(topic)}
+                          </button>
+                        );
+                      })}
                     </nav>
                   </CardContent>
                 </Card>
@@ -229,20 +285,39 @@ const GuideDetailPage = () => {
             <div className="lg:col-span-3 order-1 lg:order-2 space-y-6">
               <Card className="border-border/50 bg-card shadow-card pt-4">
                 <CardContent>
-                  {contentLoading ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">{t('guideDetail.loadingContent')}</p>
-                    </div>
-                  ) : rawContent ? (
-                    <MarkdownRenderer content={rawContent} />
-                  ) : (
-                    <div className="space-y-4">
-                      {guide.topics.map((topic, index) => (
-                        <div key={index} id={`section-${index}`} className="scroll-mt-24">
-                          <h3 className="text-lg font-semibold text-foreground mb-2">{getTopicLabel(topic)}</h3>
-                          <p className="text-muted-foreground">{t('guideDetail.contentComingSoon')}</p>
-                        </div>
-                      ))}
+                  {/* Markdown Content */}
+                  {!isPDF && (
+                    contentLoading ? (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">{t('guideDetail.loadingContent')}</p>
+                      </div>
+                    ) : rawContent ? (
+                      <MarkdownRenderer content={rawContent} />
+                    ) : (
+                      <div className="space-y-4">
+                        {guide.topics.map((topic, index) => (
+                          <div key={index} id={`section-${index}`} className="scroll-mt-24">
+                            <h3 className="text-lg font-semibold text-foreground mb-2">{getTopicLabel(topic)}</h3>
+                            <p className="text-muted-foreground">{t('guideDetail.contentComingSoon')}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
+
+                  {/* PDF Viewer - Main content or attachment */}
+                  {(isPDF || hasPdfAttachment) && (
+                    <div className={!isPDF && hasPdfAttachment ? "mt-8 pt-8 border-t border-border/50" : ""}>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                        <FileText className="h-4 w-4" />
+                        <span>{hasPdfAttachment && !isPDF ? (t('guideDetail.pdfAttachment') || 'PDF Attachment') : (t('guideDetail.pdfDocument') || 'PDF Document')}</span>
+                      </div>
+                      <PDFViewer
+                        filePath={isPDF ? pdfPath : attachmentPdfPath}
+                        title={guideTitle}
+                        className="min-h-[600px]"
+                        onLoadSuccess={setPdfPageCount}
+                      />
                     </div>
                   )}
                 </CardContent>

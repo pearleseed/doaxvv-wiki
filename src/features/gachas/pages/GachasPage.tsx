@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
+import { Breadcrumb, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI, PageLoadingState } from "@/shared/components";
 import { ResponsiveContainer } from "@/shared/components/responsive";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
@@ -115,9 +115,7 @@ const GachasPage = () => {
         <Header />
         <main id="main-content" className="py-6 sm:py-8" tabIndex={-1}>
           <ResponsiveContainer>
-            <div className="text-center py-16">
-              <p className="text-lg text-muted-foreground">{t('gachas.loading')}</p>
-            </div>
+            <PageLoadingState variant="grid" columns={3} itemCount={6} />
           </ResponsiveContainer>
         </main>
       </div>

@@ -1,7 +1,10 @@
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
-import { LucideIcon } from "lucide-react";
+import { Skeleton } from "@/shared/components/ui/skeleton";
+import { LucideIcon, ImageOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ContentCardProps {
   href: string;
@@ -15,6 +18,59 @@ interface ContentCardProps {
   variant?: "default" | "horizontal" | "featured";
   className?: string;
 }
+
+/** Reusable image component with loading skeleton and error fallback */
+const CardImage = ({ 
+  src, 
+  alt, 
+  className,
+  aspectClass = "aspect-square"
+}: { 
+  src: string; 
+  alt: string; 
+  className?: string;
+  aspectClass?: string;
+}) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  const handleLoad = useCallback(() => {
+    setLoaded(true);
+    setError(false);
+  }, []);
+
+  const handleError = useCallback(() => {
+    setError(true);
+    setLoaded(false);
+  }, []);
+
+  if (error) {
+    return (
+      <div className={cn("flex items-center justify-center bg-muted", aspectClass, className)}>
+        <ImageOff className="h-8 w-8 text-muted-foreground/50" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("relative overflow-hidden", aspectClass, className)}>
+      {!loaded && (
+        <Skeleton className="absolute inset-0 w-full h-full" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onLoad={handleLoad}
+        onError={handleError}
+        className={cn(
+          "w-full h-full object-cover transition-all duration-500 group-hover:scale-110",
+          loaded ? "opacity-100" : "opacity-0"
+        )}
+      />
+    </div>
+  );
+};
 
 const ContentCard = ({
   href,
@@ -33,14 +89,14 @@ const ContentCard = ({
       <Link to={href}>
         <Card className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 ${className}`}>
           <div className="flex flex-col sm:flex-row">
-            <div className="relative w-full sm:w-48 h-48 sm:h-auto flex-shrink-0 overflow-hidden">
-              <img
-                src={image}
-                alt={title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            <div className="relative w-full sm:w-48 h-48 sm:h-auto flex-shrink-0">
+              <CardImage 
+                src={image} 
+                alt={title} 
+                aspectClass="w-full h-full min-h-[120px]"
               />
               {badges.length > 0 && (
-                <div className="absolute top-2 left-2 flex gap-2">
+                <div className="absolute top-2 left-2 flex gap-2 z-10">
                   {badges.slice(0, 2).map((badge, i) => (
                     <Badge key={i} variant={badge.variant || "default"} className="text-xs">
                       {badge.label}
@@ -98,15 +154,15 @@ const ContentCard = ({
     return (
       <Link to={href}>
         <Card className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 ${className}`}>
-          <div className="relative aspect-[16/9] overflow-hidden">
-            <img
-              src={image}
-              alt={title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          <div className="relative aspect-[16/9]">
+            <CardImage 
+              src={image} 
+              alt={title} 
+              aspectClass="aspect-[16/9]"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
             {badges.length > 0 && (
-              <div className="absolute top-3 left-3 flex gap-2">
+              <div className="absolute top-3 left-3 flex gap-2 z-10">
                 {badges.map((badge, i) => (
                   <Badge key={i} variant={badge.variant || "default"} className="text-xs">
                     {badge.label}
@@ -162,15 +218,15 @@ const ContentCard = ({
   return (
     <Link to={href}>
       <Card className={`group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 h-full ${className}`}>
-        <div className="relative aspect-square overflow-hidden">
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        <div className="relative aspect-square">
+          <CardImage 
+            src={image} 
+            alt={title} 
+            aspectClass="aspect-square"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           {badges.length > 0 && (
-            <div className="absolute top-3 right-3 flex gap-2">
+            <div className="absolute top-3 right-3 flex gap-2 z-10">
               {badges.map((badge, i) => (
                 <Badge key={i} variant={badge.variant || "default"} className="bg-accent text-accent-foreground">
                   {badge.label}

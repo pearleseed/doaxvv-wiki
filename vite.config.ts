@@ -32,7 +32,7 @@ export default defineConfig({
     port: 4173,
     strictPort: false,
   },
-  assetsInclude: ['**/*.csv'],
+  assetsInclude: ['**/*.csv', '**/*.pdf'],
   optimizeDeps: {
     exclude: ['*.csv']
   },
@@ -63,6 +63,9 @@ export default defineConfig({
           }
           if (ext === 'csv') {
             return `assets/data/[name]-[hash][extname]`;
+          }
+          if (ext === 'pdf') {
+            return `assets/pdf/[name]-[hash][extname]`;
           }
           
           return `assets/[name]-[hash][extname]`;

@@ -58,8 +58,51 @@ const CharacterDetailPage = () => {
         <Header />
         <main id="main-content" className="py-6 sm:py-8" tabIndex={-1}>
           <ResponsiveContainer>
-            <div className="text-center py-16">
-              <p className="text-lg text-muted-foreground">{t('characterDetail.loading')}</p>
+            {/* Breadcrumb skeleton */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-4 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+            </div>
+            
+            {/* Hero section skeleton */}
+            <div className="relative mb-6 sm:mb-8 rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 via-accent/5 to-background border border-border/50">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-8">
+                <div className="md:col-span-2 space-y-3 sm:space-y-4 order-2 md:order-1">
+                  <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+                  <div className="h-12 sm:h-16 w-3/4 bg-muted animate-pulse rounded" />
+                  <div className="h-5 w-full max-w-2xl bg-muted animate-pulse rounded" />
+                  <div className="h-5 w-2/3 bg-muted animate-pulse rounded" />
+                  <div className="flex gap-3 pt-2">
+                    <div className="h-10 w-32 bg-muted animate-pulse rounded-lg" />
+                    <div className="h-10 w-28 bg-muted animate-pulse rounded-lg" />
+                  </div>
+                </div>
+                <div className="flex justify-center md:justify-end items-center order-1 md:order-2">
+                  <div className="w-40 h-40 sm:w-64 sm:h-64 rounded-xl bg-muted animate-pulse" />
+                </div>
+              </div>
+            </div>
+            
+            {/* Tabs skeleton */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 bg-muted/50 rounded-lg mb-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-10 bg-muted animate-pulse rounded-md" />
+              ))}
+            </div>
+            
+            {/* Content cards skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="rounded-lg border border-border/50 bg-card p-6 space-y-4">
+                  <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-1/2 bg-muted animate-pulse rounded" />
+                  </div>
+                </div>
+              ))}
             </div>
           </ResponsiveContainer>
         </main>
@@ -74,8 +117,14 @@ const CharacterDetailPage = () => {
         <main id="main-content" className="py-6 sm:py-8" tabIndex={-1}>
           <ResponsiveContainer>
             <Breadcrumb items={[{ label: t('nav.girls'), href: "/girls" }, { label: t('characterDetail.notFound') }]} />
-            <div className="text-center py-16">
-              <h1 className="text-2xl font-bold text-foreground mb-4">{t('characterDetail.notFound')}</h1>
+            <div className="flex flex-col items-center justify-center text-center py-16">
+              <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mb-6">
+                <Heart className="h-12 w-12 text-muted-foreground/50" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-2">{t('characterDetail.notFound')}</h1>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                {t('characterDetail.notFoundDescription') || "The character you're looking for doesn't exist or may have been removed."}
+              </p>
               <Link to="/girls">
                 <Button>{t('characterDetail.backToGirls')}</Button>
               </Link>

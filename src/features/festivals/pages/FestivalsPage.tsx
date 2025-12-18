@@ -168,7 +168,7 @@ const FestivalsPage = () => {
                   
                   <CardHeader>
                     <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                      <LocalizedText localized={festival.name} showIndicator />
+                      <LocalizedText localized={festival.name} />
                     </CardTitle>
                     <CardDescription className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />

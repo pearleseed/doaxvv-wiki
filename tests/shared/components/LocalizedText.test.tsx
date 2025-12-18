@@ -68,7 +68,7 @@ describe('LocalizedText', () => {
     expect(screen.getByText('Hello')).toBeInTheDocument();
   });
 
-  it('should handle empty translations', () => {
+  it('should handle empty translations with fallback', () => {
     const emptyLocalized: LocalizedString = {
       en: '',
       jp: '',
@@ -79,9 +79,44 @@ describe('LocalizedText', () => {
 
     render(<LocalizedText localized={emptyLocalized} />, { wrapper });
 
-    // Should render empty span
-    const span = screen.getByText('', { selector: 'span' });
+    // Should render fallback character (em dash) when all translations are empty
+    const span = screen.getByText('—');
     expect(span).toBeInTheDocument();
+    expect(span).toHaveClass('text-muted-foreground/60');
+    expect(span).toHaveClass('italic');
+  });
+
+  it('should use custom fallback text', () => {
+    const emptyLocalized: LocalizedString = {
+      en: '',
+      jp: '',
+    };
+
+    render(<LocalizedText localized={emptyLocalized} fallback="N/A" />, { wrapper });
+
+    expect(screen.getByText('N/A')).toBeInTheDocument();
+  });
+
+  it('should handle undefined localized prop', () => {
+    render(<LocalizedText localized={undefined as any} />, { wrapper });
+
+    // Should render fallback
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('should not show fallback style when disabled', () => {
+    const emptyLocalized: LocalizedString = {
+      en: '',
+      jp: '',
+    };
+
+    render(
+      <LocalizedText localized={emptyLocalized} showFallbackStyle={false} />,
+      { wrapper }
+    );
+
+    const span = screen.getByText('—');
+    expect(span).not.toHaveClass('text-muted-foreground/60');
   });
 
   it('should fallback to English when translation is missing', () => {

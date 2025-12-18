@@ -48,7 +48,10 @@ function SearchResultItem({ result, isFocused, onClick, onMouseEnter }: SearchRe
   return (
     <button
       type="button"
-      onClick={onClick}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
       onMouseEnter={onMouseEnter}
       className={cn(
         "w-full flex items-center gap-4 p-3 text-left transition-all duration-200 rounded-lg mx-1",

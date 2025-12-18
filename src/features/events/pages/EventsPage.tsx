@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
+import { Breadcrumb, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI, PageLoadingState } from "@/shared/components";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -80,9 +80,7 @@ const EventsPage = () => {
         <Header />
         <main id="main-content" className="py-6 sm:py-8" tabIndex={-1}>
           <ResponsiveContainer>
-            <div className="text-center py-16">
-              <p className="text-lg text-muted-foreground">{t('events.loading')}</p>
-            </div>
+            <PageLoadingState variant="grid" columns={3} itemCount={6} />
           </ResponsiveContainer>
         </main>
       </div>

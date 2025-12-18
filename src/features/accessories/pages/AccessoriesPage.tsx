@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/shared/layouts";
-import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI } from "@/shared/components";
+import { Breadcrumb, LocalizedText, ResponsiveContainer, DatasetImage, PaginatedGrid, ScrollToTop, UnifiedFilterUI, PageLoadingState } from "@/shared/components";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Gem } from "lucide-react";
@@ -100,9 +100,7 @@ const AccessoriesPage = () => {
         <Header />
         <main id="main-content" className="py-6 sm:py-8" tabIndex={-1}>
           <ResponsiveContainer>
-            <div className="text-center py-16">
-              <p className="text-lg text-muted-foreground">{t('accessories.loading')}</p>
-            </div>
+            <PageLoadingState variant="grid" columns={4} itemCount={12} />
           </ResponsiveContainer>
         </main>
       </div>
