@@ -32,7 +32,7 @@ const Header = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [results, setResults] = useState<SearchResults>({
-    characters: [], swimsuits: [], events: [], gachas: [], guides: [], items: [], episodes: [], total: 0,
+    characters: [], swimsuits: [], events: [], gachas: [], guides: [], items: [], episodes: [], tools: [], accessories: [], missions: [], quizzes: [], total: 0,
   });
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,7 +59,7 @@ const Header = () => {
 
   useEffect(() => {
     if (!debouncedQuery.trim()) {
-      setResults({ characters: [], swimsuits: [], events: [], gachas: [], guides: [], items: [], episodes: [], total: 0 });
+      setResults({ characters: [], swimsuits: [], events: [], gachas: [], guides: [], items: [], episodes: [], tools: [], accessories: [], missions: [], quizzes: [], total: 0 });
       setIsLoading(false);
       return;
     }

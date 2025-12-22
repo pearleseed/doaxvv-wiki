@@ -8,7 +8,7 @@
  */
 
 import { contentLoader } from '@/content/loader';
-import type { Character, Swimsuit, Event, Gacha, Guide, Item, Episode } from '@/content/schemas/content.schema';
+import type { Character, Swimsuit, Event, Gacha, Guide, Item, Episode, Tool, Accessory, Mission, Quiz } from '@/content/schemas/content.schema';
 import type { LocalizedString, LanguageCode } from '@/shared/types/localization';
 
 // ============================================================================
@@ -279,7 +279,7 @@ function matchesDateQuery(
 }
 
 export interface SearchResult {
-  type: 'character' | 'swimsuit' | 'event' | 'gacha' | 'guide' | 'item' | 'episode';
+  type: 'character' | 'swimsuit' | 'event' | 'gacha' | 'guide' | 'item' | 'episode' | 'tool' | 'accessory' | 'mission' | 'quiz';
   id: number;
   unique_key: string;
   title: string;
@@ -298,6 +298,10 @@ export interface SearchResults {
   guides: SearchResult[];
   items: SearchResult[];
   episodes: SearchResult[];
+  tools: SearchResult[];
+  accessories: SearchResult[];
+  missions: SearchResult[];
+  quizzes: SearchResult[];
   total: number;
 }
 
@@ -329,6 +333,17 @@ function getLocalizedValue(localized: LocalizedString | undefined, language: Lan
 function matchesQuery(value: string | undefined, query: string): boolean {
   if (!value) return false;
   return value.toLowerCase().includes(query.toLowerCase());
+}
+
+/**
+ * Check if unique_key matches the query (case-insensitive, exact or partial match)
+ */
+function matchesUniqueKey(uniqueKey: string | undefined, query: string): boolean {
+  if (!uniqueKey) return false;
+  const normalizedKey = uniqueKey.toLowerCase();
+  const normalizedQuery = query.toLowerCase();
+  // Match if query is contained in unique_key or unique_key starts with query
+  return normalizedKey.includes(normalizedQuery) || normalizedKey === normalizedQuery;
 }
 
 /**
@@ -376,6 +391,10 @@ export class SearchService {
       contentLoader.loadGuides(),
       contentLoader.loadItems(),
       contentLoader.loadEpisodes(),
+      contentLoader.loadTools(),
+      contentLoader.loadAccessories(),
+      contentLoader.loadMissions(),
+      contentLoader.loadQuizzes(),
     ]).then(() => {
       this.initialized = true;
     });
@@ -430,6 +449,10 @@ export class SearchService {
       guides: this.searchGuides(trimmedQuery, maxPerType, language),
       items: this.searchItems(trimmedQuery, maxPerType, language),
       episodes: this.searchEpisodes(trimmedQuery, maxPerType, language),
+      tools: this.searchTools(trimmedQuery, maxPerType, language),
+      accessories: this.searchAccessories(trimmedQuery, maxPerType, language),
+      missions: this.searchMissions(trimmedQuery, maxPerType, language),
+      quizzes: this.searchQuizzes(trimmedQuery, maxPerType, language),
       get total() {
         return (
           this.characters.length +
@@ -438,7 +461,11 @@ export class SearchService {
           this.gachas.length +
           this.guides.length +
           this.items.length +
-          this.episodes.length
+          this.episodes.length +
+          this.tools.length +
+          this.accessories.length +
+          this.missions.length +
+          this.quizzes.length
         );
       },
     };
@@ -463,27 +490,43 @@ export class SearchService {
     let guides = contentLoader.getGuides();
     let items = contentLoader.getItems();
     let episodes = contentLoader.getEpisodes();
+    let tools = contentLoader.getTools();
+    let accessories = contentLoader.getAccessories();
+    let missions = contentLoader.getMissions();
+    let quizzes = contentLoader.getQuizzes();
 
     // Apply text filter if present
     if (textQuery) {
       characters = characters.filter(c => 
-        matchesLocalizedQuery(c.name, textQuery, language) || matchesQuery(c.title, textQuery)
+        matchesLocalizedQuery(c.name, textQuery, language) || matchesQuery(c.title, textQuery) || matchesUniqueKey(c.unique_key, textQuery)
       );
       swimsuits = swimsuits.filter(s => 
-        matchesLocalizedQuery(s.name, textQuery, language) || matchesQuery(s.title, textQuery) || matchesQuery(s.character, textQuery)
+        matchesLocalizedQuery(s.name, textQuery, language) || matchesQuery(s.title, textQuery) || matchesQuery(s.character, textQuery) || matchesUniqueKey(s.unique_key, textQuery)
       );
       events = events.filter(e => 
-        matchesLocalizedQuery(e.name, textQuery, language) || matchesQuery(e.title, textQuery)
+        matchesLocalizedQuery(e.name, textQuery, language) || matchesQuery(e.title, textQuery) || matchesUniqueKey(e.unique_key, textQuery)
       );
-      gachas = gachas.filter(g => matchesLocalizedQuery(g.name, textQuery, language));
+      gachas = gachas.filter(g => matchesLocalizedQuery(g.name, textQuery, language) || matchesUniqueKey(g.unique_key, textQuery));
       guides = guides.filter(g => 
-        matchesLocalizedQuery(g.localizedTitle, textQuery, language) || matchesQuery(g.title, textQuery)
+        matchesLocalizedQuery(g.localizedTitle, textQuery, language) || matchesQuery(g.title, textQuery) || matchesUniqueKey(g.unique_key, textQuery)
       );
       items = items.filter(i => 
-        matchesLocalizedQuery(i.name, textQuery, language) || matchesQuery(i.title, textQuery)
+        matchesLocalizedQuery(i.name, textQuery, language) || matchesQuery(i.title, textQuery) || matchesUniqueKey(i.unique_key, textQuery)
       );
       episodes = episodes.filter(e => 
-        matchesLocalizedQuery(e.name, textQuery, language) || matchesQuery(e.title, textQuery)
+        matchesLocalizedQuery(e.name, textQuery, language) || matchesQuery(e.title, textQuery) || matchesUniqueKey(e.unique_key, textQuery)
+      );
+      tools = tools.filter(t => 
+        matchesLocalizedQuery(t.localizedTitle, textQuery, language) || matchesQuery(t.title, textQuery) || matchesUniqueKey(t.unique_key, textQuery)
+      );
+      accessories = accessories.filter(a => 
+        matchesLocalizedQuery(a.name, textQuery, language) || matchesQuery(a.title, textQuery) || matchesUniqueKey(a.unique_key, textQuery)
+      );
+      missions = missions.filter(m => 
+        matchesLocalizedQuery(m.name, textQuery, language) || matchesQuery(m.title, textQuery) || matchesUniqueKey(m.unique_key, textQuery)
+      );
+      quizzes = quizzes.filter(q => 
+        matchesLocalizedQuery(q.name, textQuery, language) || matchesUniqueKey(q.unique_key, textQuery)
       );
     }
 
@@ -498,6 +541,10 @@ export class SearchService {
           guides = guides.filter(g => g.id === query.value);
           items = items.filter(i => i.id === query.value);
           episodes = episodes.filter(e => e.id === query.value);
+          tools = tools.filter(t => t.id === query.value);
+          accessories = accessories.filter(a => a.id === query.value);
+          missions = missions.filter(m => m.id === query.value);
+          quizzes = quizzes.filter(q => q.id === query.value);
           break;
 
         case 'unique_key':
@@ -508,18 +555,26 @@ export class SearchService {
           guides = guides.filter(g => g.unique_key === query.value);
           items = items.filter(i => i.unique_key === query.value);
           episodes = episodes.filter(e => e.unique_key === query.value);
+          tools = tools.filter(t => t.unique_key === query.value);
+          accessories = accessories.filter(a => a.unique_key === query.value);
+          missions = missions.filter(m => m.unique_key === query.value);
+          quizzes = quizzes.filter(q => q.unique_key === query.value);
           break;
 
         case 'stats':
-          // Stats only apply to characters and swimsuits
+          // Stats only apply to characters and swimsuits (accessories have optional stats)
           characters = characters.filter(c => matchesStatsQuery(c.stats, query));
           swimsuits = swimsuits.filter(s => matchesStatsQuery(s.stats, query));
+          accessories = accessories.filter(a => a.stats && matchesStatsQuery({ POW: a.stats.POW || 0, TEC: a.stats.TEC || 0, STM: a.stats.STM || 0, APL: a.stats.APL }, query));
           // Clear other types as they don't have stats
           events = [];
           gachas = [];
           guides = [];
           items = [];
           episodes = [];
+          tools = [];
+          missions = [];
+          quizzes = [];
           break;
 
         case 'date':
@@ -532,6 +587,10 @@ export class SearchService {
           guides = [];
           items = [];
           episodes = [];
+          tools = [];
+          accessories = [];
+          missions = [];
+          quizzes = [];
           break;
       }
     }
@@ -545,6 +604,10 @@ export class SearchService {
       guides: guides.slice(0, maxPerType).map(g => this.transformGuide(g, language)),
       items: items.slice(0, maxPerType).map(i => this.transformItem(i, language)),
       episodes: episodes.slice(0, maxPerType).map(e => this.transformEpisode(e, language)),
+      tools: tools.slice(0, maxPerType).map(t => this.transformTool(t, language)),
+      accessories: accessories.slice(0, maxPerType).map(a => this.transformAccessory(a, language)),
+      missions: missions.slice(0, maxPerType).map(m => this.transformMission(m, language)),
+      quizzes: quizzes.slice(0, maxPerType).map(q => this.transformQuiz(q, language)),
       parsedQueries: queries,
       errors,
       get total() {
@@ -555,7 +618,11 @@ export class SearchService {
           this.gachas.length +
           this.guides.length +
           this.items.length +
-          this.episodes.length
+          this.episodes.length +
+          this.tools.length +
+          this.accessories.length +
+          this.missions.length +
+          this.quizzes.length
         );
       },
     };
@@ -572,6 +639,10 @@ export class SearchService {
       guides: [],
       items: [],
       episodes: [],
+      tools: [],
+      accessories: [],
+      missions: [],
+      quizzes: [],
       total: 0,
     };
   }
@@ -590,44 +661,68 @@ export class SearchService {
 
   private searchCharacters(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
     return this.searchContent(contentLoader.getCharacters(), query, maxResults, language,
-      (c, q, l) => matchesLocalizedQuery(c.name, q, l) || matchesQuery(c.title, q),
+      (c, q, l) => matchesLocalizedQuery(c.name, q, l) || matchesQuery(c.title, q) || matchesUniqueKey(c.unique_key, q),
       (c, l) => this.transformCharacter(c, l));
   }
 
   private searchSwimsuits(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
     return this.searchContent(contentLoader.getSwimsuits(), query, maxResults, language,
-      (s, q, l) => matchesLocalizedQuery(s.name, q, l) || matchesQuery(s.title, q) || matchesQuery(s.character, q),
+      (s, q, l) => matchesLocalizedQuery(s.name, q, l) || matchesQuery(s.title, q) || matchesQuery(s.character, q) || matchesUniqueKey(s.unique_key, q),
       (s, l) => this.transformSwimsuit(s, l));
   }
 
   private searchEvents(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
     return this.searchContent(contentLoader.getEvents(), query, maxResults, language,
-      (e, q, l) => matchesLocalizedQuery(e.name, q, l) || matchesQuery(e.title, q),
+      (e, q, l) => matchesLocalizedQuery(e.name, q, l) || matchesQuery(e.title, q) || matchesUniqueKey(e.unique_key, q),
       (e, l) => this.transformEvent(e, l));
   }
 
   private searchGachas(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
     return this.searchContent(contentLoader.getGachas(), query, maxResults, language,
-      (g, q, l) => matchesLocalizedQuery(g.name, q, l),
+      (g, q, l) => matchesLocalizedQuery(g.name, q, l) || matchesUniqueKey(g.unique_key, q),
       (g, l) => this.transformGacha(g, l));
   }
 
   private searchGuides(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
     return this.searchContent(contentLoader.getGuides(), query, maxResults, language,
-      (g, q, l) => matchesLocalizedQuery(g.localizedTitle, q, l) || matchesQuery(g.title, q),
+      (g, q, l) => matchesLocalizedQuery(g.localizedTitle, q, l) || matchesQuery(g.title, q) || matchesUniqueKey(g.unique_key, q),
       (g, l) => this.transformGuide(g, l));
   }
 
   private searchItems(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
     return this.searchContent(contentLoader.getItems(), query, maxResults, language,
-      (i, q, l) => matchesLocalizedQuery(i.name, q, l) || matchesQuery(i.title, q),
+      (i, q, l) => matchesLocalizedQuery(i.name, q, l) || matchesQuery(i.title, q) || matchesUniqueKey(i.unique_key, q),
       (i, l) => this.transformItem(i, l));
   }
 
   private searchEpisodes(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
     return this.searchContent(contentLoader.getEpisodes(), query, maxResults, language,
-      (e, q, l) => matchesLocalizedQuery(e.name, q, l) || matchesQuery(e.title, q),
+      (e, q, l) => matchesLocalizedQuery(e.name, q, l) || matchesQuery(e.title, q) || matchesUniqueKey(e.unique_key, q),
       (e, l) => this.transformEpisode(e, l));
+  }
+
+  private searchTools(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
+    return this.searchContent(contentLoader.getTools(), query, maxResults, language,
+      (t, q, l) => matchesLocalizedQuery(t.localizedTitle, q, l) || matchesQuery(t.title, q) || matchesUniqueKey(t.unique_key, q),
+      (t, l) => this.transformTool(t, l));
+  }
+
+  private searchAccessories(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
+    return this.searchContent(contentLoader.getAccessories(), query, maxResults, language,
+      (a, q, l) => matchesLocalizedQuery(a.name, q, l) || matchesQuery(a.title, q) || matchesUniqueKey(a.unique_key, q),
+      (a, l) => this.transformAccessory(a, l));
+  }
+
+  private searchMissions(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
+    return this.searchContent(contentLoader.getMissions(), query, maxResults, language,
+      (m, q, l) => matchesLocalizedQuery(m.name, q, l) || matchesQuery(m.title, q) || matchesUniqueKey(m.unique_key, q),
+      (m, l) => this.transformMission(m, l));
+  }
+
+  private searchQuizzes(query: string, maxResults: number, language: LanguageCode): SearchResult[] {
+    return this.searchContent(contentLoader.getQuizzes(), query, maxResults, language,
+      (q, query, l) => matchesLocalizedQuery(q.name, query, l) || matchesUniqueKey(q.unique_key, query),
+      (q, l) => this.transformQuiz(q, l));
   }
 
   /**
@@ -708,10 +803,8 @@ export class SearchService {
       id: guide.id,
       unique_key: guide.unique_key,
       title: getLocalizedValue(guide.localizedTitle, language),
-      subtitle: `${guide.difficulty} • ${guide.read_time}`,
+      subtitle: `${guide.read_time}`,
       image: guide.image,
-      badge: guide.difficulty,
-      badgeVariant: this.getDifficultyBadgeVariant(guide.difficulty),
       url: `/guides/${guide.unique_key}`,
     };
   }
@@ -728,8 +821,6 @@ export class SearchService {
       title: getLocalizedValue(item.name, language),
       subtitle: item.type,
       image: item.image,
-      badge: item.rarity,
-      badgeVariant: this.getItemRarityBadgeVariant(item.rarity),
       url: `/items/${item.unique_key}`,
     };
   }
@@ -749,6 +840,73 @@ export class SearchService {
       badge: episode.episode_status,
       badgeVariant: this.getEpisodeStatusBadgeVariant(episode.episode_status),
       url: `/episodes/${episode.unique_key}`,
+    };
+  }
+
+  /**
+   * Transform Tool to SearchResult
+   * Displays: image, title
+   */
+  private transformTool(tool: Tool, language: LanguageCode): SearchResult {
+    return {
+      type: 'tool',
+      id: tool.id,
+      unique_key: tool.unique_key,
+      title: getLocalizedValue(tool.localizedTitle, language) || tool.title,
+      image: tool.image,
+      url: `/tools/${tool.unique_key}`,
+    };
+  }
+
+  /**
+   * Transform Accessory to SearchResult
+   * Displays: image, name, rarity
+   */
+  private transformAccessory(accessory: Accessory, language: LanguageCode): SearchResult {
+    return {
+      type: 'accessory',
+      id: accessory.id,
+      unique_key: accessory.unique_key,
+      title: getLocalizedValue(accessory.name, language) || accessory.title,
+      subtitle: accessory.obtain_method,
+      image: accessory.image,
+      badge: accessory.rarity,
+      badgeVariant: this.getRarityBadgeVariant(accessory.rarity),
+      url: `/accessories/${accessory.unique_key}`,
+    };
+  }
+
+  /**
+   * Transform Mission to SearchResult
+   * Displays: image, name, type
+   */
+  private transformMission(mission: Mission, language: LanguageCode): SearchResult {
+    return {
+      type: 'mission',
+      id: mission.id,
+      unique_key: mission.unique_key,
+      title: getLocalizedValue(mission.name, language) || mission.title,
+      subtitle: mission.type,
+      image: mission.image || '',
+      url: `/missions/${mission.unique_key}`,
+    };
+  }
+
+  /**
+   * Transform Quiz to SearchResult
+   * Displays: image, name, difficulty
+   */
+  private transformQuiz(quiz: Quiz, language: LanguageCode): SearchResult {
+    return {
+      type: 'quiz',
+      id: quiz.id,
+      unique_key: quiz.unique_key,
+      title: getLocalizedValue(quiz.name, language),
+      subtitle: quiz.category,
+      image: quiz.image,
+      badge: quiz.difficulty,
+      badgeVariant: this.getDifficultyBadgeVariant(quiz.difficulty),
+      url: `/quizzes/${quiz.unique_key}`,
     };
   }
 

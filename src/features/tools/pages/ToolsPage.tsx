@@ -37,7 +37,7 @@ const ToolsPage = () => {
       const title = getLocalizedValue(item.localizedTitle, currentLanguage).toLowerCase();
       const summary = getLocalizedValue(item.localizedSummary, currentLanguage).toLowerCase();
       const search = searchTerm.toLowerCase();
-      return title.includes(search) || summary.includes(search);
+      return title.includes(search) || summary.includes(search) || item.unique_key.toLowerCase().includes(search);
     };
   }, [currentLanguage]);
 

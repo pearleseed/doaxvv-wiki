@@ -65,6 +65,10 @@ export function HeroSearch({ placeholder = 'Search characters, events, swimsuits
     guides: [],
     items: [],
     episodes: [],
+    tools: [],
+    accessories: [],
+    missions: [],
+    quizzes: [],
     total: 0,
   });
 
@@ -81,6 +85,10 @@ export function HeroSearch({ placeholder = 'Search characters, events, swimsuits
         guides: [],
         items: [],
         episodes: [],
+        tools: [],
+        accessories: [],
+        missions: [],
+        quizzes: [],
         total: 0,
       });
       setIsLoading(false);

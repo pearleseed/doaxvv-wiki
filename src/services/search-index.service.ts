@@ -154,7 +154,7 @@ export class SearchIndexService {
   }
 
   /** Generic index builder */
-  private buildIndex<T extends { name?: { en?: string; jp?: string } }>(
+  private buildIndex<T extends { name?: { en?: string; jp?: string }; unique_key?: string }>(
     items: T[],
     indexFields: string[],
     docTransform?: (item: T) => Record<string, unknown>
@@ -172,32 +172,32 @@ export class SearchIndexService {
   }
 
   private async buildCharacterIndex(): Promise<void> {
-    this.characterIndex = this.buildIndex(contentLoader.getCharacters(), ['title', 'name_en', 'name_jp']);
+    this.characterIndex = this.buildIndex(contentLoader.getCharacters(), ['unique_key', 'title', 'name_en', 'name_jp']);
   }
 
   private async buildSwimsuitIndex(): Promise<void> {
-    this.swimsuitIndex = this.buildIndex(contentLoader.getSwimsuits(), ['title', 'name_en', 'name_jp', 'character']);
+    this.swimsuitIndex = this.buildIndex(contentLoader.getSwimsuits(), ['unique_key', 'title', 'name_en', 'name_jp', 'character']);
   }
 
   private async buildEventIndex(): Promise<void> {
-    this.eventIndex = this.buildIndex(contentLoader.getEvents(), ['title', 'name_en', 'name_jp']);
+    this.eventIndex = this.buildIndex(contentLoader.getEvents(), ['unique_key', 'title', 'name_en', 'name_jp']);
   }
 
   private async buildGachaIndex(): Promise<void> {
-    this.gachaIndex = this.buildIndex(contentLoader.getGachas(), ['name_en', 'name_jp']);
+    this.gachaIndex = this.buildIndex(contentLoader.getGachas(), ['unique_key', 'name_en', 'name_jp']);
   }
 
   private async buildGuideIndex(): Promise<void> {
-    this.guideIndex = this.buildIndex(contentLoader.getGuides(), ['title', 'localizedTitle_en', 'localizedTitle_jp', 'summary'],
+    this.guideIndex = this.buildIndex(contentLoader.getGuides(), ['unique_key', 'title', 'localizedTitle_en', 'localizedTitle_jp', 'summary'],
       (g) => ({ ...g, localizedTitle_en: g.localizedTitle?.en || '', localizedTitle_jp: g.localizedTitle?.jp || '' }));
   }
 
   private async buildItemIndex(): Promise<void> {
-    this.itemIndex = this.buildIndex(contentLoader.getItems(), ['title', 'name_en', 'name_jp']);
+    this.itemIndex = this.buildIndex(contentLoader.getItems(), ['unique_key', 'title', 'name_en', 'name_jp']);
   }
 
   private async buildEpisodeIndex(): Promise<void> {
-    this.episodeIndex = this.buildIndex(contentLoader.getEpisodes(), ['title', 'name_en', 'name_jp']);
+    this.episodeIndex = this.buildIndex(contentLoader.getEpisodes(), ['unique_key', 'title', 'name_en', 'name_jp']);
   }
 
   /**
@@ -221,43 +221,90 @@ export class SearchIndexService {
       };
     }
 
-    const trimmedQuery = query.trim();
+    const trimmedQuery = query.trim().toLowerCase();
     const allResults: IndexedSearchResult[] = [];
+    const seenIds = new Set<string>(); // Track seen results to avoid duplicates
+
+    // Helper to add results without duplicates
+    const addResults = (results: IndexedSearchResult[]) => {
+      for (const result of results) {
+        const key = `${result.type}-${result.id}`;
+        if (!seenIds.has(key)) {
+          seenIds.add(key);
+          allResults.push(result);
+        }
+      }
+    };
 
     // Search each type and collect results
     if (types.includes('character') && this.characterIndex) {
-      const results = this.searchIndex(this.characterIndex, trimmedQuery);
-      allResults.push(...results.map(r => this.transformCharacter(r as Character, language)));
+      const flexResults = this.searchIndex(this.characterIndex, trimmedQuery);
+      addResults(flexResults.map(r => this.transformCharacter(r as Character, language)));
+      // Fallback: search by unique_key directly
+      const uniqueKeyResults = contentLoader.getCharacters()
+        .filter(c => c.unique_key.toLowerCase().includes(trimmedQuery))
+        .map(c => this.transformCharacter(c, language));
+      addResults(uniqueKeyResults);
     }
 
     if (types.includes('swimsuit') && this.swimsuitIndex) {
-      const results = this.searchIndex(this.swimsuitIndex, trimmedQuery);
-      allResults.push(...results.map(r => this.transformSwimsuit(r as Swimsuit, language)));
+      const flexResults = this.searchIndex(this.swimsuitIndex, trimmedQuery);
+      addResults(flexResults.map(r => this.transformSwimsuit(r as Swimsuit, language)));
+      // Fallback: search by unique_key directly
+      const uniqueKeyResults = contentLoader.getSwimsuits()
+        .filter(s => s.unique_key.toLowerCase().includes(trimmedQuery))
+        .map(s => this.transformSwimsuit(s, language));
+      addResults(uniqueKeyResults);
     }
 
     if (types.includes('event') && this.eventIndex) {
-      const results = this.searchIndex(this.eventIndex, trimmedQuery);
-      allResults.push(...results.map(r => this.transformEvent(r as Event, language)));
+      const flexResults = this.searchIndex(this.eventIndex, trimmedQuery);
+      addResults(flexResults.map(r => this.transformEvent(r as Event, language)));
+      // Fallback: search by unique_key directly
+      const uniqueKeyResults = contentLoader.getEvents()
+        .filter(e => e.unique_key.toLowerCase().includes(trimmedQuery))
+        .map(e => this.transformEvent(e, language));
+      addResults(uniqueKeyResults);
     }
 
     if (types.includes('gacha') && this.gachaIndex) {
-      const results = this.searchIndex(this.gachaIndex, trimmedQuery);
-      allResults.push(...results.map(r => this.transformGacha(r as Gacha, language)));
+      const flexResults = this.searchIndex(this.gachaIndex, trimmedQuery);
+      addResults(flexResults.map(r => this.transformGacha(r as Gacha, language)));
+      // Fallback: search by unique_key directly
+      const uniqueKeyResults = contentLoader.getGachas()
+        .filter(g => g.unique_key.toLowerCase().includes(trimmedQuery))
+        .map(g => this.transformGacha(g, language));
+      addResults(uniqueKeyResults);
     }
 
     if (types.includes('guide') && this.guideIndex) {
-      const results = this.searchIndex(this.guideIndex, trimmedQuery);
-      allResults.push(...results.map(r => this.transformGuide(r as Guide, language)));
+      const flexResults = this.searchIndex(this.guideIndex, trimmedQuery);
+      addResults(flexResults.map(r => this.transformGuide(r as Guide, language)));
+      // Fallback: search by unique_key directly
+      const uniqueKeyResults = contentLoader.getGuides()
+        .filter(g => g.unique_key.toLowerCase().includes(trimmedQuery))
+        .map(g => this.transformGuide(g, language));
+      addResults(uniqueKeyResults);
     }
 
     if (types.includes('item') && this.itemIndex) {
-      const results = this.searchIndex(this.itemIndex, trimmedQuery);
-      allResults.push(...results.map(r => this.transformItem(r as Item, language)));
+      const flexResults = this.searchIndex(this.itemIndex, trimmedQuery);
+      addResults(flexResults.map(r => this.transformItem(r as Item, language)));
+      // Fallback: search by unique_key directly
+      const uniqueKeyResults = contentLoader.getItems()
+        .filter(i => i.unique_key.toLowerCase().includes(trimmedQuery))
+        .map(i => this.transformItem(i, language));
+      addResults(uniqueKeyResults);
     }
 
     if (types.includes('episode') && this.episodeIndex) {
-      const results = this.searchIndex(this.episodeIndex, trimmedQuery);
-      allResults.push(...results.map(r => this.transformEpisode(r as Episode, language)));
+      const flexResults = this.searchIndex(this.episodeIndex, trimmedQuery);
+      addResults(flexResults.map(r => this.transformEpisode(r as Episode, language)));
+      // Fallback: search by unique_key directly
+      const uniqueKeyResults = contentLoader.getEpisodes()
+        .filter(e => e.unique_key.toLowerCase().includes(trimmedQuery))
+        .map(e => this.transformEpisode(e, language));
+      addResults(uniqueKeyResults);
     }
 
     const total = allResults.length;
@@ -310,14 +357,43 @@ export class SearchIndexService {
       return { all: 0, character: 0, swimsuit: 0, event: 0, gacha: 0, guide: 0, item: 0, episode: 0 };
     }
 
-    const trimmedQuery = query.trim();
+    const trimmedQuery = query.trim().toLowerCase();
     const counts: Record<string, number> = { all: 0 };
 
-    for (const type of ALL_TYPES) {
-      const typeResults = this.search(trimmedQuery, { types: [type], limit: 10000 });
-      counts[type] = typeResults.total;
-      counts.all += typeResults.total;
-    }
+    // Helper to count unique results (FlexSearch + unique_key fallback)
+    const countForType = <T extends { unique_key: string }>(
+      index: DocumentIndex,
+      items: T[]
+    ): number => {
+      const seenIds = new Set<number>();
+      
+      // Count from FlexSearch
+      if (index) {
+        const flexResults = this.searchIndex(index, trimmedQuery) as Array<{ id: number }>;
+        for (const r of flexResults) {
+          seenIds.add(r.id);
+        }
+      }
+      
+      // Count from unique_key fallback
+      for (const item of items) {
+        if (item.unique_key.toLowerCase().includes(trimmedQuery)) {
+          seenIds.add((item as unknown as { id: number }).id);
+        }
+      }
+      
+      return seenIds.size;
+    };
+
+    counts.character = countForType(this.characterIndex, contentLoader.getCharacters());
+    counts.swimsuit = countForType(this.swimsuitIndex, contentLoader.getSwimsuits());
+    counts.event = countForType(this.eventIndex, contentLoader.getEvents());
+    counts.gacha = countForType(this.gachaIndex, contentLoader.getGachas());
+    counts.guide = countForType(this.guideIndex, contentLoader.getGuides());
+    counts.item = countForType(this.itemIndex, contentLoader.getItems());
+    counts.episode = countForType(this.episodeIndex, contentLoader.getEpisodes());
+    
+    counts.all = counts.character + counts.swimsuit + counts.event + counts.gacha + counts.guide + counts.item + counts.episode;
 
     return counts as Record<IndexedSearchResult['type'] | 'all', number>;
   }
@@ -390,10 +466,8 @@ export class SearchIndexService {
       id: guide.id,
       unique_key: guide.unique_key,
       title: this.getLocalizedValue(guide.localizedTitle, language) || guide.title,
-      subtitle: `${guide.difficulty} • ${guide.read_time}`,
+      subtitle: `${guide.read_time}`,
       image: guide.image,
-      badge: guide.difficulty,
-      badgeVariant: this.getDifficultyBadgeVariant(guide.difficulty),
       url: `/guides/${guide.unique_key}`,
       _original: guide,
     };
@@ -407,8 +481,6 @@ export class SearchIndexService {
       title: this.getLocalizedValue(item.name, language) || item.title,
       subtitle: item.type,
       image: item.image,
-      badge: item.rarity,
-      badgeVariant: this.getItemRarityBadgeVariant(item.rarity),
       url: `/items/${item.unique_key}`,
       _original: item,
     };

@@ -100,12 +100,13 @@ const SwimsuitDetailPage = () => {
   const hasDecoBromide = swimsuit?.deco_bromide_image != null && swimsuit.deco_bromide_image !== '';
 
   // Get current image based on selected type
-  // bromide = swimsuit.image (default)
+  // bromide = swimsuit.bromide_image (preferred) or swimsuit.image (fallback)
   // deco-bromide = swimsuit.deco_bromide_image (alternative)
+  const bromideImage = swimsuit?.bromide_image || '';
   const currentImage = swimsuit 
     ? (imageType === 'deco-bromide' && hasDecoBromide 
         ? swimsuit.deco_bromide_image! 
-        : swimsuit.image)
+        : bromideImage)
     : '';
 
   const getRarityColor = (rarity: string) => {
@@ -171,7 +172,7 @@ const SwimsuitDetailPage = () => {
                         onClick={() => setImageType('deco-bromide')}
                         className="text-xs"
                       >
-                        Deco
+                        Deco-Bromide
                       </Button>
                     </div>
                   )}
@@ -319,7 +320,6 @@ const SwimsuitDetailPage = () => {
               title: guide.title,
               image: guide.image,
               href: `/guides/${guide.unique_key}`,
-              badge: t(`difficulty.${guide.difficulty.toLowerCase()}`),
               description: guide.summary,
             }))}
             viewAllHref="/guides"
@@ -366,7 +366,7 @@ const SwimsuitDetailPage = () => {
                 onClick={() => setImageType('deco-bromide')}
                 className="text-xs"
               >
-                Deco
+                Deco-Bromide
               </Button>
             </div>
           )}

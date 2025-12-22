@@ -60,6 +60,7 @@ export interface Swimsuit extends BaseContent {
   character: string;
   character_id: string;
   image: string;
+  bromide_image?: string;       // Optional bromide image for detail page
   deco_bromide_image?: string;  // Optional deco-bromide variant image
   stats: { POW: number; TEC: number; STM: number; APL?: number };
   // Localized fields

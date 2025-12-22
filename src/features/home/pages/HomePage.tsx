@@ -43,7 +43,7 @@ const HomePage = () => {
     const characters = contentLoader.getCharacters();
     const events = contentLoader.getEvents();
     const guides = contentLoader.getGuides();
-    const activeEvents = events.filter(e => e.event_status === "Active");
+    const activeEvents = events.filter(e => ["Active", "Upcoming", "Ended"].includes(e.event_status));
 
     // Load swimsuits count lazily (not critical for initial render)
     contentLoader.loadSwimsuits().then(swimsuits => {

@@ -35,8 +35,10 @@ const ItemsPage = () => {
   const customSearchFn = useMemo(() => {
     return (item: Item, searchTerm: string): boolean => {
       if (!searchTerm || searchTerm.trim() === '') return true;
-      return item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             item.summary.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      return item.title.toLowerCase().includes(searchLower) ||
+             item.summary.toLowerCase().includes(searchLower) ||
+             item.unique_key.toLowerCase().includes(searchLower);
     };
   }, []);
 

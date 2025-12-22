@@ -5,9 +5,9 @@ import { Dot } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-interface InputOTPProps extends React.ComponentProps<typeof OTPInput> {
-  ref?: React.Ref<React.ElementRef<typeof OTPInput>>;
-}
+type InputOTPProps = React.ComponentPropsWithoutRef<typeof OTPInput> & {
+  ref?: React.Ref<HTMLInputElement>;
+};
 
 function InputOTP({ className, containerClassName, ref, ...props }: InputOTPProps) {
   return (

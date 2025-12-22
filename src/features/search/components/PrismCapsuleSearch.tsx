@@ -181,6 +181,10 @@ export function PrismCapsuleSearch({
     guides: [],
     items: [],
     episodes: [],
+    tools: [],
+    accessories: [],
+    missions: [],
+    quizzes: [],
     total: 0,
   });
 
@@ -197,6 +201,10 @@ export function PrismCapsuleSearch({
         guides: [],
         items: [],
         episodes: [],
+        tools: [],
+        accessories: [],
+        missions: [],
+        quizzes: [],
         total: 0,
       });
       setIsLoading(false);

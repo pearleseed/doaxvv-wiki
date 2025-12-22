@@ -171,6 +171,8 @@ export function transformSwimsuit(raw: any): Swimsuit {
     character: raw.character_id ? raw.character_id.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : '',
     character_id: raw.character_id,
     image: raw.image,
+    bromide_image: raw.bromide_image || undefined,
+    deco_bromide_image: raw.deco_bromide_image || undefined,
     stats: typeof raw.stats === 'string' ? JSON.parse(raw.stats) : raw.stats,
     // LocalizedString fields
     name: createLocalizedStringFromCSV(raw, 'name'),
@@ -291,7 +293,7 @@ export function transformGuide(raw: any): Guide {
 export function transformGacha(raw: any): Gacha {
   return {
     id: parseInt(raw.id) || 0,
-    unique_key: raw.unique_key || raw.slug,
+    unique_key: raw.unique_key,
     image: raw.image,
     name: createLocalizedStringFromCSV(raw, 'name'),
     start_date: raw.start_date ? new Date(raw.start_date) : new Date(),

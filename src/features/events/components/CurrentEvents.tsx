@@ -17,7 +17,7 @@ const CurrentEvents = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isScrollingRef = useRef(false);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     // Try to use cached data first, then load if needed

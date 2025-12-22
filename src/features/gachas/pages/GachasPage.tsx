@@ -51,7 +51,9 @@ const GachasPage = () => {
     return (item: Gacha, searchTerm: string): boolean => {
       if (!searchTerm || searchTerm.trim() === '') return true;
       const name = getLocalizedValue(item.name, currentLanguage);
-      return name.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      return name.toLowerCase().includes(searchLower) ||
+        item.unique_key.toLowerCase().includes(searchLower);
     };
   }, [currentLanguage]);
 
@@ -165,11 +167,11 @@ const GachasPage = () => {
                     className="group cursor-pointer overflow-hidden border-border/50 bg-card shadow-card hover:shadow-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in"
                     style={{ animationDelay: `${Math.min(index, 8) * 0.03}s` }}
                   >
-                  <div className="relative h-64 overflow-hidden">
+                  <div className="relative aspect-[16/9] overflow-hidden bg-black/5">
                     <DatasetImage
                       src={gacha.image}
                       alt={gachaName}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="w-full h-full object-contain"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                     

@@ -380,7 +380,9 @@ Format ô: Number, 1-2 decimal places
 | `unique_key` | string | Key duy nhất | `venus-dream-misaki` |
 | `rarity` | enum | Độ hiếm | `SSR`, `SR`, `R` |
 | `character_id` | string | ID nhân vật | `misaki` |
-| `image` | string | URL hình ảnh | `https://...` |
+| `image` | string | URL hình ảnh (thumbnail) | `https://...` |
+| `bromide_image` | string | URL hình bromide (detail page) | `https://...` (optional) |
+| `deco_bromide_image` | string | URL hình deco-bromide | `https://...` (optional) |
 | `stats` | JSON | Chỉ số | `"{""POW"":450,""TEC"":380,""STM"":420,""APL"":48}"` |
 | `updated_at` | string | Ngày cập nhật | `2024-01-15` |
 | `author` | string | Tác giả | `WikiTeam` |
@@ -413,7 +415,7 @@ Format ô: Number, 1-2 decimal places
 #### Ví Dụ Thêm Bản Ghi Mới
 
 ```csv
-31,new-swimsuit-ssr,SSR,misaki,https://images.unsplash.com/photo-xxx,"{""POW"":470,""TEC"":400,""STM"":430,""APL"":49}",2024-12-15,WikiTeam,published,misaki,90,155,470,135,400,145,430,16,49,3.5,2.9,3.2,0.36,New Swimsuit,新水着,新泳装,新泳裝,새 수영복,Power Boost,パワーブースト,Increases POW by 20%,POWを20%上昇,Defense Up,ディフェンスアップ,Defense +15%,防御+15%,,,,
+31,new-swimsuit-ssr,SSR,misaki,https://images.unsplash.com/photo-xxx,https://images.unsplash.com/photo-bromide,,"{""POW"":470,""TEC"":400,""STM"":430,""APL"":49}",2024-12-15,WikiTeam,published,misaki,90,155,470,135,400,145,430,16,49,3.5,2.9,3.2,0.36,New Swimsuit,新水着,新泳装,新泳裝,새 수영복,Power Boost,パワーブースト,Increases POW by 20%,POWを20%上昇,Defense Up,ディフェンスアップ,Defense +15%,防御+15%,,,,
 ```
 
 ---
@@ -482,7 +484,6 @@ Ví dụ: Event "Summer Splash Festival" có thể liên kết với:
 |--------|------|-------|----------------|
 | `id` | number | ID duy nhất | |
 | `unique_key` | string | Key duy nhất | |
-| `slug` | string | URL slug | |
 | `image` | string | URL hình ảnh | |
 | `start_date` | datetime | Ngày bắt đầu | |
 | `end_date` | datetime | Ngày kết thúc | |
@@ -509,7 +510,7 @@ Ví dụ: Event "Summer Splash Festival" có thể liên kết với:
 #### Ví Dụ Thêm Bản Ghi Mới
 
 ```csv
-30,new-premium-gacha,new-premium-gacha,https://images.unsplash.com/photo-xxx,2025-01-01T00:00:00Z,2025-01-15T23:59:00Z,Coming Soon,4.0,18.0,78.0,100,true,new-swimsuit-ssr,misaki|honoka,2024-12-15,WikiTeam,published,New Premium Gacha,新プレミアムガチャ,新高级扭蛋,新高級扭蛋,새 프리미엄 가챠,Premium gacha with new SSR swimsuits,新SSR水着が登場するプレミアムガチャ
+30,new-premium-gacha,https://images.unsplash.com/photo-xxx,2025-01-01T00:00:00Z,2025-01-15T23:59:00Z,Coming Soon,4.0,18.0,78.0,100,true,new-swimsuit-ssr,misaki|honoka,2024-12-15,WikiTeam,published,New Premium Gacha,新プレミアムガチャ,新高级扭蛋,新高級扭蛋,새 프리미엄 가챠,Premium gacha with new SSR swimsuits,新SSR水着が登場するプレミアムガチャ
 ```
 
 ---
@@ -1015,7 +1016,7 @@ Giải thích đáp án.
 
 **Bước 4: Thêm gacha vào gachas.csv**
 ```csv
-30,new-girl-debut-gacha,new-girl-debut-gacha,https://example.com/gacha.jpg,2025-01-01T00:00:00Z,2025-01-15T23:59:00Z,Coming Soon,4.0,18.0,78.0,100,true,new-girl-debut-ssr,new-girl,...
+30,new-girl-debut-gacha,https://example.com/gacha.jpg,2025-01-01T00:00:00Z,2025-01-15T23:59:00Z,Coming Soon,4.0,18.0,78.0,100,true,new-girl-debut-ssr,new-girl,...
 ```
 
 **Bước 5: Cập nhật related_ids**

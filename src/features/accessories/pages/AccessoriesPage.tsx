@@ -47,7 +47,9 @@ const AccessoriesPage = () => {
     return (item: Accessory, searchTerm: string): boolean => {
       if (!searchTerm || searchTerm.trim() === '') return true;
       const localizedName = getLocalizedValue(item.name, currentLanguage);
-      return localizedName.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      return localizedName.toLowerCase().includes(searchLower) ||
+        item.unique_key.toLowerCase().includes(searchLower);
     };
   }, [currentLanguage]);
 

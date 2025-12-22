@@ -95,8 +95,10 @@ const QuizzesPage = () => {
       if (!searchTerm || searchTerm.trim() === '') return true;
       const name = getLocalizedValue(item.name, currentLanguage);
       const description = getLocalizedValue(item.description, currentLanguage);
-      return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             description.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      return name.toLowerCase().includes(searchLower) ||
+             description.toLowerCase().includes(searchLower) ||
+             item.unique_key.toLowerCase().includes(searchLower);
     };
   }, [currentLanguage]);
 

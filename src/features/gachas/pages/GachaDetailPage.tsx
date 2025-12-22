@@ -159,11 +159,11 @@ const GachaDetailPage = () => {
 
           <div className="animate-fade-in space-y-6">
             {/* Hero Banner */}
-            <div className="relative aspect-[21/9] rounded-xl sm:rounded-2xl overflow-hidden">
+            <div className="relative aspect-[16/9] rounded-xl sm:rounded-2xl overflow-hidden bg-black/5">
               <DatasetImage
                 src={gacha.image}
                 alt={getLocalizedValue(gacha.name, currentLanguage)}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8">

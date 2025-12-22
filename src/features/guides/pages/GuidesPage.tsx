@@ -34,8 +34,10 @@ const GuidesPage = () => {
   const customSearchFn = useMemo(() => {
     return (item: Guide, searchTerm: string): boolean => {
       if (!searchTerm || searchTerm.trim() === '') return true;
-      return getLocalizedValue(item.localizedTitle, currentLanguage).toLowerCase().includes(searchTerm.toLowerCase()) ||
-             getLocalizedValue(item.localizedSummary, currentLanguage).toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      return getLocalizedValue(item.localizedTitle, currentLanguage).toLowerCase().includes(searchLower) ||
+             getLocalizedValue(item.localizedSummary, currentLanguage).toLowerCase().includes(searchLower) ||
+             item.unique_key.toLowerCase().includes(searchLower);
     };
   }, [currentLanguage]);
 

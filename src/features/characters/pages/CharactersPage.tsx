@@ -35,12 +35,14 @@ const CharactersPage = () => {
   // Set dynamic page title (Requirements: 9.1, 9.2)
   useDocumentTitle(t('characters.title'));
 
-  // Custom search function that uses localized name
+  // Custom search function that uses localized name and unique_key
   const customSearchFn = useMemo(() => {
     return (item: Character, searchTerm: string): boolean => {
       if (!searchTerm || searchTerm.trim() === '') return true;
       const localizedName = getLocalizedValue(item.name, currentLanguage);
-      return localizedName.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      return localizedName.toLowerCase().includes(searchLower) ||
+        item.unique_key.toLowerCase().includes(searchLower);
     };
   }, [currentLanguage]);
 

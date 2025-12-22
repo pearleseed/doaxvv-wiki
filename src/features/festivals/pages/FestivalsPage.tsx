@@ -41,8 +41,10 @@ const FestivalsPage = () => {
     return (item: Event, searchTerm: string): boolean => {
       if (!searchTerm || searchTerm.trim() === '') return true;
       const festivalName = getLocalizedValue(item.name, currentLanguage);
-      return festivalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             item.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      return festivalName.toLowerCase().includes(searchLower) ||
+             item.title.toLowerCase().includes(searchLower) ||
+             item.unique_key.toLowerCase().includes(searchLower);
     };
   }, [currentLanguage]);
 

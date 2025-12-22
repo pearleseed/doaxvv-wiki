@@ -56,14 +56,15 @@ const SwimsuitsPage = () => {
     [characters, currentLanguage]
   );
 
-  // Custom search function that uses localized name and character
+  // Custom search function that uses localized name, character, and unique_key
   const customSearchFn = useMemo(() => {
     return (item: Swimsuit, searchTerm: string): boolean => {
       if (!searchTerm || searchTerm.trim() === '') return true;
       const localizedName = getLocalizedValue(item.name, currentLanguage);
       const searchLower = searchTerm.toLowerCase();
       return localizedName.toLowerCase().includes(searchLower) ||
-        item.character.toLowerCase().includes(searchLower);
+        item.character.toLowerCase().includes(searchLower) ||
+        item.unique_key.toLowerCase().includes(searchLower);
     };
   }, [currentLanguage]);
 
