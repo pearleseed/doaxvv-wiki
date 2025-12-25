@@ -130,6 +130,7 @@ export interface Gacha {
 export interface Item extends BaseContent {
   type: 'Decoration' | 'Consumable' | 'Material';
   image: string;
+  quantity?: number;
   // Localized fields
   name: LocalizedString;
   description?: LocalizedString;

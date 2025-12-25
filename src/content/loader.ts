@@ -244,6 +244,7 @@ export function transformItem(raw: any): Item {
     related_ids: raw.related_ids ? raw.related_ids.split('|') : [],
     type: raw.type as Item['type'],
     image: raw.image,
+    quantity: raw.quantity || '',
     // LocalizedString fields
     name: createLocalizedStringFromCSV(raw, 'name'),
     description: raw.description_en ? createLocalizedStringFromCSV(raw, 'description') : undefined,

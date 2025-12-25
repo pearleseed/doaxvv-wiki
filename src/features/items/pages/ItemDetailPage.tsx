@@ -155,6 +155,12 @@ const ItemDetailPage = () => {
                     <div className="text-sm text-muted-foreground">{t('itemDetail.updated')}</div>
                     <div className="font-medium">{item.updated_at}</div>
                   </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      {t('itemDetail.quantity')}
+                    </div>
+                    <div className="font-medium text-primary">{item.quantity}</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

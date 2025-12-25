@@ -147,7 +147,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <CustomContextMenu />
+        {/* <CustomContextMenu /> */}
         <RouterProvider router={router} />
       </TooltipProvider>
     </ThemeProvider>
